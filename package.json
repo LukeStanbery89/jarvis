@@ -5,6 +5,7 @@
     "private": true,
     "workspaces": [
         "modules/protocol",
+        "modules/device_identity",
         "server",
         "browser_extension"
     ],

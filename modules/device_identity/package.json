@@ -1,0 +1,35 @@
+{
+    "name": "@jarvis/device-identity",
+    "version": "1.0.0",
+    "description": "Device ID generation, persistence, metadata",
+    "private": true,
+    "main": "dist/shared/device-identity.js",
+    "types": "dist/shared/device-identity.d.ts",
+    "exports": {
+        "./browser": {
+            "types": "./dist/browser/index.d.ts",
+            "default": "./dist/browser/index.js"
+        },
+        "./node": {
+            "types": "./dist/node/index.d.ts",
+            "default": "./dist/node/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc --watch",
+        "test": "jest",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --coverage"
+    },
+    "author": "Luke Stanbery",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/chrome": "^0.0.268",
+        "@types/jest": "^30.0.0",
+        "@types/node": "^20.19.10",
+        "jest": "^30.0.5",
+        "ts-jest": "^29.4.1",
+        "typescript": "^5.3.3"
+    }
+}
