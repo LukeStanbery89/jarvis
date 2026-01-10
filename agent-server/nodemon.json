@@ -1,0 +1,11 @@
+{
+    "watch": ["src", "../shared"],
+    "ext": "ts,json",
+    "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts", "dist/**/*", "node_modules/**/*"],
+    "exec": "ts-node src/index.ts",
+    "env": {
+        "NODE_ENV": "development"
+    },
+    "delay": 1000,
+    "verbose": true
+}

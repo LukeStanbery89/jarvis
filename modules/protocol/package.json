@@ -1,0 +1,19 @@
+{
+    "name": "@jarvis/protocol",
+    "version": "1.0.0",
+    "description": "Message envelopes, framing, versioning",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc --watch",
+        "clean": "rm -rf dist",
+        "rebuild": "npm run clean && npm run build",
+        "test": "npm test"
+    },
+    "author": "Luke Stanbery",
+    "license": "ISC",
+    "devDependencies": {
+        "typescript": "^5.3.3"
+    }
+}

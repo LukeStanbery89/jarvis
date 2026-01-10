@@ -1,0 +1,1 @@
+export { MusicBrainzSearchFactory } from './MusicBrainzSearchFactory';

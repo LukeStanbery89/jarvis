@@ -1,0 +1,33 @@
+{
+    "name": "jarvis-monorepo",
+    "version": "1.0.0",
+    "description": "J.A.R.V.I.S. - AI assistant with modular architecture",
+    "private": true,
+    "workspaces": [
+        "modules/protocol",
+        "agent-server",
+        "agent-browser-extension"
+    ],
+    "scripts": {
+        "build": "npm run build --workspaces --if-present",
+        "build:protocol": "npm run build -w @jarvis/protocol",
+        "build:modules": "npm run build --workspaces --if-present --workspace=modules/*",
+        "watch": "npm run watch --workspaces --if-present",
+        "test": "npm run test --workspaces --if-present",
+        "clean": "npm run clean --workspaces --if-present",
+        "dev:server": "npm run dev -w agent-server",
+        "start:server": "npm start -w agent-server"
+    },
+    "keywords": [
+        "jarvis",
+        "ai",
+        "assistant",
+        "websocket",
+        "monorepo"
+    ],
+    "author": "Luke Stanbery",
+    "license": "ISC",
+    "devDependencies": {
+        "typescript": "^5.3.3"
+    }
+}
