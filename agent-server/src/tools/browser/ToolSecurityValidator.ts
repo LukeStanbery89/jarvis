@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import { ToolExecutionRequest, ToolSecurityContext, ToolDefinition } from '../../../../shared/types';
+import { ToolExecutionRequest, ToolSecurityContext, ToolDefinition } from '@jarvis/protocol';
 import { IClientConnection } from '../../websocket/types';
 import { logger } from '../../utils/logger';
 

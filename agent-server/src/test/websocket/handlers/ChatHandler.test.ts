@@ -4,7 +4,7 @@ import { ClientManager } from '../../../websocket/ClientManager';
 import { AuthenticationService } from '../../../services/AuthenticationService';
 import { ChatService, CHAT_SERVICE_TOKEN } from '../../../services/ChatService';
 import { IHandlerContext, IClientConnection, ClientType } from '../../../websocket/types';
-import { ChatMessage, AgentResponse } from '../../../../../shared/types';
+import { ChatMessage, AgentResponse } from '@jarvis/protocol';
 
 // Mock dependencies
 jest.mock('../../../websocket/ClientManager');

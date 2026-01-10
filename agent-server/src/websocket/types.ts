@@ -6,7 +6,7 @@ import {
     AgentResponse,
     ToolRequest,
     AgentStatus
-} from '../../../shared/types';
+} from '@jarvis/protocol';
 
 /**
  * Client types that can connect to the WebSocket server

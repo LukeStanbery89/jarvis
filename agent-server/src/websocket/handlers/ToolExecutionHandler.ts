@@ -2,7 +2,7 @@ import { inject, injectable } from 'tsyringe';
 import { WebSocket } from 'ws';
 import { BaseHandler } from './BaseHandler';
 import { IClientConnection, IHandlerContext, IEventHandler } from '../types';
-import { ToolExecutionResponse, ToolExecutionStatus } from '../../../../shared/types';
+import { ToolExecutionResponse, ToolExecutionStatus } from '@jarvis/protocol';
 import { ToolExecutionManager } from '../../tools/browser/ToolExecutionManager';
 import { ClientManager } from '../ClientManager';
 import { logger } from '../../utils/logger';

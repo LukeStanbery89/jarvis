@@ -1,4 +1,4 @@
-import { ToolExecutionRequest, ToolExecutionResponse } from '../../../shared/types';
+import { ToolExecutionRequest, ToolExecutionResponse } from '@jarvis/protocol';
 import { logger } from '../utils/logger';
 
 /**

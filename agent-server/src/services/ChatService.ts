@@ -4,7 +4,7 @@ import { MemorySaver } from '@langchain/langgraph';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { HumanMessage } from '@langchain/core/messages';
 import { StructuredTool } from '@langchain/core/tools';
-import { AgentResponse, ChatMessage } from '../../../shared/types';
+import { AgentResponse, ChatMessage } from '@jarvis/protocol';
 import { IHandlerContext } from '../websocket/types';
 import { logger } from '../utils/logger';
 import { LangGraphCallback } from '../utils/LangGraphCallback';

@@ -1,6 +1,6 @@
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { inject, injectable } from 'tsyringe';
-import { ToolDefinition, ToolExecutionRequest } from '../../../../shared/types';
+import { ToolDefinition, ToolExecutionRequest } from '@jarvis/protocol';
 import { ToolExecutionManager } from './ToolExecutionManager';
 import { ToolSecurityValidator } from './ToolSecurityValidator';
 import { ClientManager } from '../../websocket/ClientManager';

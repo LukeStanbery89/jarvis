@@ -4,7 +4,7 @@ import { BrowserExtensionTool } from '../tools/browser/BrowserExtensionTool';
 import { ToolExecutionManager } from '../tools/browser/ToolExecutionManager';
 import { ToolSecurityValidator } from '../tools/browser/ToolSecurityValidator';
 import { ClientManager } from '../websocket/ClientManager';
-import { ToolDefinition } from '../../../shared/types';
+import { ToolDefinition } from '@jarvis/protocol';
 import { logger } from '../utils/logger';
 
 /**

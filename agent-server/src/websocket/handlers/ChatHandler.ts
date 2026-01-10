@@ -5,7 +5,7 @@ import { IHandlerContext } from '../types';
 import { ClientManager } from '../ClientManager';
 import { AuthenticationService } from '../../services/AuthenticationService';
 import { ChatService, CHAT_SERVICE_TOKEN } from '../../services/ChatService';
-import { ChatMessage } from '../../../../shared/types';
+import { ChatMessage } from '@jarvis/protocol';
 import { logger } from '../../utils/logger';
 
 /**

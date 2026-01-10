@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { ChatService } from '../../services/ChatService';
-import { ChatMessage } from '../../../../shared/types';
+import { ChatMessage } from '@jarvis/protocol';
 import { IHandlerContext } from '../../websocket/types';
 
 // Mock the external dependencies

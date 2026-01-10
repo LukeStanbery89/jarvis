@@ -1,7 +1,7 @@
 import { BaseToolExecutor } from './BaseToolExecutor';
 import { ExtractPageContentTool } from './ExtractPageContentTool';
 import { OpenUrlTool } from './OpenUrlTool';
-import { ToolExecutionRequest, ToolExecutionResponse, ToolDefinition } from '../../../shared/types';
+import { ToolExecutionRequest, ToolExecutionResponse, ToolDefinition } from '@jarvis/protocol';
 import { logger } from '../utils/logger';
 
 /**

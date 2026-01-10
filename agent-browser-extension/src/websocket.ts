@@ -4,7 +4,7 @@ import {
     ChatMessage,
     AgentResponse,
     AgentStatus
-} from '../../../shared/types';
+} from '@jarvis/protocol';
 import { ClientRegistration } from '../../agent-server/src/websocket';
 import { ToolExecutor } from './tools/ToolExecutor';
 
