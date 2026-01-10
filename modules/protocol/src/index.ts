@@ -1,13 +1,17 @@
 /**
- * Agent Protocol Module
+ * @jarvis/protocol
  *
- * This module provides protocol definitions and utilities for agent communication.
+ * Core message types and utilities for WebSocket communication.
+ * Shared across server, browser extension, and future hardware nodes.
  */
 
+// Export all message types
+export * from './messages';
+
+// Export utility functions
+export * from './utils';
+
 /**
- * Example protocol interface
+ * Protocol version
  */
-export interface ProtocolMessage {
-    type: string;
-    payload: unknown;
-}
+export const PROTOCOL_VERSION = '1.0.0';
