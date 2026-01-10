@@ -3,9 +3,9 @@ import {
     BaseMessage,
     ChatMessage,
     AgentResponse,
-    AgentStatus
+    AgentStatus,
+    ClientRegistration
 } from '@jarvis/protocol';
-import { ClientRegistration } from '../../agent-server/src/websocket';
 import { ToolExecutor } from './tools/ToolExecutor';
 
 export class WebSocketManager {

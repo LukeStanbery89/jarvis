@@ -111,6 +111,17 @@ export interface ToolExecutionStatus extends BaseMessage {
 }
 
 /**
+ * Client → Server: Client registration message
+ */
+export interface ClientRegistration extends BaseMessage {
+    type: 'client_registration';
+    clientType: string;
+    capabilities: string[];
+    userAgent?: string;
+    metadata?: Record<string, any>;
+}
+
+/**
  * Tool-specific result types
  */
 export interface PageContent {

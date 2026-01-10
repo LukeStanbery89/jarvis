@@ -5,8 +5,8 @@
     "private": true,
     "workspaces": [
         "modules/protocol",
-        "agent-server",
-        "agent-browser-extension"
+        "server",
+        "browser_extension"
     ],
     "scripts": {
         "build": "npm run build --workspaces --if-present",
@@ -15,8 +15,8 @@
         "watch": "npm run watch --workspaces --if-present",
         "test": "npm run test --workspaces --if-present",
         "clean": "npm run clean --workspaces --if-present",
-        "dev:server": "npm run dev -w agent-server",
-        "start:server": "npm start -w agent-server"
+        "dev:server": "npm run dev -w server",
+        "start:server": "npm start -w server"
     },
     "keywords": [
         "jarvis",
