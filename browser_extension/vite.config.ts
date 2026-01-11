@@ -11,6 +11,7 @@ export default defineConfig({
                 popup: resolve(__dirname, 'src/popup.ts'),
                 content: resolve(__dirname, 'src/content.ts'),
                 background: resolve(__dirname, 'src/background.ts'),
+                settings: resolve(__dirname, 'src/settings.ts'),
                 styles: resolve(__dirname, 'src/styles.css'),
             },
             output: {
@@ -36,6 +37,12 @@ export default defineConfig({
                 fs.copyFileSync(
                     resolve(__dirname, 'src/popup.html'),
                     resolve(__dirname, 'dist/popup.html')
+                );
+
+                // Copy settings.html
+                fs.copyFileSync(
+                    resolve(__dirname, 'src/settings.html'),
+                    resolve(__dirname, 'dist/settings.html')
                 );
 
                 // Copy icons

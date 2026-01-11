@@ -34,10 +34,54 @@ export class WebSocketManager {
     // - Consider implementing periodic context summarization
     // - Add session health monitoring and recovery
 
+    private readonly SERVER_URL_KEY = 'jarvis_server_url';
+    private readonly DEFAULT_SERVER_URL = 'ws://127.0.0.1:3000';
+
     constructor(serverUrl = 'ws://127.0.0.1:3000') {
         this.serverUrl = serverUrl;
         this.loadStoredSessionId(); // Load session on startup
+        this.loadServerUrl(); // Load server URL from settings
         // Don't start polling immediately - let the background script handle initial connection
+    }
+
+    /**
+     * Load server URL from storage
+     */
+    private async loadServerUrl(): Promise<void> {
+        try {
+            const result = await chrome.storage.local.get([this.SERVER_URL_KEY]);
+            if (result[this.SERVER_URL_KEY]) {
+                this.serverUrl = result[this.SERVER_URL_KEY];
+                console.log('[WebSocket] Loaded server URL from storage:', this.serverUrl);
+            }
+        } catch (error) {
+            console.error('[WebSocket] Failed to load server URL:', error);
+        }
+    }
+
+    /**
+     * Update server URL and reconnect
+     */
+    public async updateServerUrl(newUrl: string): Promise<void> {
+        if (this.serverUrl === newUrl) {
+            console.log('[WebSocket] Server URL unchanged, skipping reconnect');
+            return;
+        }
+
+        console.log('[WebSocket] Updating server URL from', this.serverUrl, 'to', newUrl);
+        this.serverUrl = newUrl;
+
+        // Disconnect from old server
+        if (this.isConnected) {
+            this.disconnect();
+        }
+
+        // Reconnect to new server
+        try {
+            await this.connect();
+        } catch (error) {
+            console.error('[WebSocket] Failed to reconnect with new URL:', error);
+        }
     }
 
     // Connection polling methods

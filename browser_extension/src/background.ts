@@ -296,6 +296,25 @@ function broadcastToPopups(type: string, data: any) {
 }
 
 /**
+ * Handle messages from settings page and other extension pages
+ */
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'server_url_changed') {
+        console.log('[Background] Server URL changed to:', message.serverUrl);
+        websocketManager.updateServerUrl(message.serverUrl)
+            .then(() => {
+                console.log('[Background] Successfully updated server URL and reconnected');
+                sendResponse({ success: true });
+            })
+            .catch((error) => {
+                console.error('[Background] Failed to update server URL:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+        return true; // Keep message channel open for async response
+    }
+});
+
+/**
  * Handle extension lifecycle events
  */
 chrome.runtime.onStartup.addListener(() => {
