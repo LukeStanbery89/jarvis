@@ -6,6 +6,7 @@
     "workspaces": [
         "modules/protocol",
         "modules/device_identity",
+        "modules/ws-client",
         "server",
         "browser_extension"
     ],

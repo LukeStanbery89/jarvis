@@ -3,9 +3,13 @@
     "version": "1.0.0",
     "description": "Device ID generation, persistence, metadata",
     "private": true,
-    "main": "dist/shared/device-identity.js",
-    "types": "dist/shared/device-identity.d.ts",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
         "./browser": {
             "types": "./dist/browser/index.d.ts",
             "default": "./dist/browser/index.js"
