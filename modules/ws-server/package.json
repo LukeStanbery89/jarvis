@@ -1,0 +1,32 @@
+{
+    "name": "@jarvis/ws-server",
+    "version": "1.0.0",
+    "description": "Platform-agnostic WebSocket server with client management and message routing",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc --watch",
+        "test": "jest",
+        "test:run": "jest --passWithNoTests",
+        "test:coverage": "jest --coverage --passWithNoTests"
+    },
+    "dependencies": {
+        "@jarvis/protocol": "^1.0.0",
+        "ws": "^8.18.0"
+    },
+    "devDependencies": {
+        "@types/ws": "^8.5.10",
+        "@types/node": "^20.19.10",
+        "typescript": "^5.3.3",
+        "jest": "^30.0.5",
+        "ts-jest": "^29.4.1",
+        "@types/jest": "^29.5.14"
+    }
+}
