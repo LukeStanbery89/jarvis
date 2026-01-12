@@ -1,11 +1,10 @@
-import { WebSocket } from 'ws';
 import { injectable, inject } from 'tsyringe';
 import { BaseHandler } from './BaseHandler';
-import { IHandlerContext } from '../types';
-import { ClientManager } from '../ClientManager';
+import type { IHandlerContext, ISocketWrapper } from '@jarvis/ws-server';
+import { ClientManager } from '@jarvis/ws-server';
 import { AuthenticationService } from '../../services/AuthenticationService';
 import { ChatService, CHAT_SERVICE_TOKEN } from '../../services/ChatService';
-import { logger } from '../../utils/logger';
+import { logger } from '@jarvis/server-utils';
 
 /**
  * Handler for clearing conversation history
@@ -26,7 +25,7 @@ export class ClearConversationHandler extends BaseHandler {
     /**
      * Handle clear conversation request
      */
-    async handle(socket: { id: string; emit: (event: string, data: any) => void; disconnect: () => void }, data: any, context: IHandlerContext): Promise<void> {
+    async handle(socket: ISocketWrapper, data: any, context: IHandlerContext): Promise<void> {
         // Validate client registration
         if (!this.validateClientRegistration(socket, context)) {
             return;

@@ -1,6 +1,6 @@
 import { AgentAction, AgentFinish } from '@langchain/core/agents';
 import { IAgentLogger, ILangGraphConfig, IDataSanitizer } from '../interfaces/ILangGraphServices';
-import { logger } from '../logger';
+import { logger } from '@jarvis/server-utils';
 
 /**
  * Service for handling agent-related logging

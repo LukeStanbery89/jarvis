@@ -2,9 +2,7 @@ import 'reflect-metadata';
 import { container } from 'tsyringe';
 import { ChatService, CHAT_SERVICE_TOKEN } from './services/ChatService';
 import { AuthenticationService } from './services/AuthenticationService';
-import { ClientManager } from './websocket/ClientManager';
-import { ToolExecutionManager } from './tools/browser/ToolExecutionManager';
-import { ToolSecurityValidator } from './tools/browser/ToolSecurityValidator';
+import { ToolExecutionManager, ToolSecurityValidator } from '@jarvis/rag-tools-server';
 import { BrowserToolService } from './services/BrowserToolService';
 
 export function setupContainer(): void {
@@ -13,10 +11,6 @@ export function setupContainer(): void {
 
     container.register<AuthenticationService>(AuthenticationService, {
         useClass: AuthenticationService
-    });
-
-    container.register<ClientManager>(ClientManager, {
-        useClass: ClientManager
     });
 
     // Register tool execution services

@@ -1,0 +1,38 @@
+{
+    "name": "@jarvis/rag-tools-server",
+    "version": "1.0.0",
+    "description": "Server-side RAG tools for Jarvis agent (Tavily, Wikipedia, MusicBrainz, Weather, etc.)",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc --watch",
+        "test": "jest",
+        "clean": "rm -rf dist"
+    },
+    "author": "Luke Stanbery",
+    "license": "ISC",
+    "dependencies": {
+        "@jarvis/protocol": "^1.0.0",
+        "@jarvis/server-utils": "^1.0.0",
+        "@jarvis/ws-server": "^1.0.0",
+        "@langchain/community": "^0.3.51",
+        "@langchain/core": "^0.3.71",
+        "@langchain/tavily": "^0.1.5",
+        "dotenv": "^16.3.1",
+        "axios": "^1.6.0",
+        "tsyringe": "^4.8.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.19.10",
+        "typescript": "^5.3.3",
+        "jest": "^30.0.5",
+        "ts-jest": "^29.4.1"
+    }
+}

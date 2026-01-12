@@ -1,8 +1,7 @@
-import { WebSocket } from 'ws';
 import { injectable, inject } from 'tsyringe';
 import { BaseHandler } from './BaseHandler';
-import { IHandlerContext } from '../types';
-import { ClientManager } from '../ClientManager';
+import type { IHandlerContext, ISocketWrapper } from '@jarvis/ws-server';
+import { ClientManager } from '@jarvis/ws-server';
 
 /**
  * Handler for ping/pong messages to maintain connection health
@@ -21,7 +20,7 @@ export class PingHandler extends BaseHandler {
     /**
      * Handle ping message and respond with pong
      */
-    async handle(socket: { id: string; emit: (event: string, data: any) => void; disconnect: () => void }, data: any, context: IHandlerContext): Promise<void> {
+    async handle(socket: ISocketWrapper, data: any, context: IHandlerContext): Promise<void> {
         this.logActivity('Ping received, sending pong', {
             clientId: context.clientId,
             pingId: data.id

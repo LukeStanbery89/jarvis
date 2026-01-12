@@ -22,7 +22,7 @@ import { isValidMessage, validateServerConfig } from './utils/validation';
 export class WebSocketServer implements IWebSocketServer {
     private wss: WSServer;
     private handlers = new Map<string, IEventHandler<any>>();
-    private clientManager: ClientManager;
+    public readonly clientManager: ClientManager;  // Expose for integration with DI containers
     private logger: ILogger;
     private config: Required<IWebSocketServerConfig>;
 
@@ -37,6 +37,7 @@ export class WebSocketServer implements IWebSocketServer {
             maxConnections: 0, // 0 = unlimited
             pingInterval: 30000,
             clientTimeout: 60000,
+            messageFormat: 'envelope',
             cors: {
                 origin: '*',
                 credentials: false
@@ -226,8 +227,8 @@ export class WebSocketServer implements IWebSocketServer {
                 socketId
             });
 
-            // Create socket wrapper with logger
-            const socketWrapper = createSocketWrapper(ws, socketId, this.logger);
+            // Create socket wrapper with logger and message format
+            const socketWrapper = createSocketWrapper(ws, socketId, this.config.messageFormat, this.logger);
 
             // Handle incoming messages
             ws.on('message', async (data: Buffer) => {

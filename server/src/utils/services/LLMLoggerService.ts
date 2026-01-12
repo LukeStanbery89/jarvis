@@ -1,7 +1,7 @@
 import { Serialized } from '@langchain/core/load/serializable';
 import { LLMResult } from '@langchain/core/outputs';
 import { ILLMLogger, ILangGraphConfig, IDataSanitizer } from '../interfaces/ILangGraphServices';
-import { logger } from '../logger';
+import { logger } from '@jarvis/server-utils';
 
 /**
  * Service for handling LLM-related logging

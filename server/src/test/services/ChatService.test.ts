@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { ChatService } from '../../services/ChatService';
 import { ChatMessage } from '@jarvis/protocol';
-import { IHandlerContext } from '../../websocket/types';
+import type { IHandlerContext } from '@jarvis/ws-server';
 
 // Mock the external dependencies
 jest.mock('@langchain/community/tools/tavily_search', () => ({
@@ -30,7 +30,7 @@ describe('ChatService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         chatService = new ChatService();
-        
+
         mockContext = {
             clientId: 'test-client-123',
             timestamp: Date.now(),
@@ -66,7 +66,7 @@ describe('ChatService', () => {
 
         it('should have correct stats after initialization', () => {
             const stats = chatService.getStats();
-            
+
             expect(stats.agentInitialized).toBe(true);
             expect(stats.memoryEnabled).toBe(true);
             expect(stats.toolsAvailable).toBe(1);
@@ -87,7 +87,7 @@ describe('ChatService', () => {
 
             // Create a new service to use the mocked agent
             const testService = new ChatService();
-            
+
             const response = await testService.processMessage(mockChatMessage, mockContext);
 
             expect(response).toEqual({
@@ -133,7 +133,7 @@ describe('ChatService', () => {
             createReactAgent.mockReturnValue(mockAgent);
 
             const testService = new ChatService();
-            
+
             await testService.processMessage(mockChatMessage, mockContext);
 
             expect(mockAgent.invoke).toHaveBeenCalledWith(
@@ -148,7 +148,7 @@ describe('ChatService', () => {
 
     describe('clearHistory', () => {
         it('should log info about session-based clearing', async () => {
-            const loggerSpy = jest.spyOn(require('../../utils/logger').logger, 'info').mockImplementation();
+            const loggerSpy = jest.spyOn(require('@jarvis/server-utils').logger, 'info').mockImplementation();
 
             await chatService.clearHistory('test-client-123');
 
@@ -166,10 +166,10 @@ describe('ChatService', () => {
 
         it('should handle errors gracefully', async () => {
             // Mock logger to throw an error
-            const loggerSpy = jest.spyOn(require('../../utils/logger').logger, 'info')
+            const loggerSpy = jest.spyOn(require('@jarvis/server-utils').logger, 'info')
                 .mockImplementation(() => { throw new Error('Logger error'); });
 
-            const errorSpy = jest.spyOn(require('../../utils/logger').logger, 'error').mockImplementation();
+            const errorSpy = jest.spyOn(require('@jarvis/server-utils').logger, 'error').mockImplementation();
 
             await chatService.clearHistory('test-client-123');
 

@@ -7,10 +7,9 @@ import { initWebSocketServer } from './websocket';
 import { setupContainer, container } from './container';
 import { initRoutes } from './routes';
 import { ChatService, CHAT_SERVICE_TOKEN } from './services/ChatService';
-import { logger } from './utils/logger';
+import { logger } from '@jarvis/server-utils';
 
 // Import WebSocket services for singleton registration
-import { ClientManager } from './websocket/ClientManager';
 import { AuthenticationService } from './services/AuthenticationService';
 
 dotenv.config();
@@ -18,8 +17,6 @@ dotenv.config();
 // Setup dependency injection container
 setupContainer();
 
-// Register WebSocket services as singletons
-container.registerSingleton(ClientManager);
 container.registerSingleton(AuthenticationService);
 
 const app = express();
@@ -29,10 +26,14 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 const server = createServer(app);
+
+// Initialize WebSocket server first to register ClientManager
+const webSocketServer = initWebSocketServer(server);
+
+// Now resolve ChatService (which depends on BrowserToolService → ClientManager)
 const chatService = container.resolve<ChatService>(CHAT_SERVICE_TOKEN);
 
 initRoutes(app);
-const webSocketServer = initWebSocketServer(server);
 
 server.listen(PORT, () => {
     logger.info('Server started successfully', {

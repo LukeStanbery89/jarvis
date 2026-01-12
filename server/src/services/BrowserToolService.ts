@@ -1,11 +1,9 @@
 import { inject, injectable } from 'tsyringe';
 import { DynamicStructuredTool } from '@langchain/core/tools';
-import { BrowserExtensionTool } from '../tools/browser/BrowserExtensionTool';
-import { ToolExecutionManager } from '../tools/browser/ToolExecutionManager';
-import { ToolSecurityValidator } from '../tools/browser/ToolSecurityValidator';
-import { ClientManager } from '../websocket/ClientManager';
+import { BrowserExtensionTool, ToolExecutionManager, ToolSecurityValidator } from '@jarvis/rag-tools-server';
+import { ClientManager } from '@jarvis/ws-server';
 import { ToolDefinition } from '@jarvis/protocol';
-import { logger } from '../utils/logger';
+import { logger } from '@jarvis/server-utils';
 
 /**
  * Service for managing browser extension tools integration with LangChain
@@ -28,7 +26,7 @@ export class BrowserToolService {
         @inject(ClientManager) private clientManager: ClientManager
     ) {
         this.initializeBuiltinTools();
-        
+
         logger.info('BrowserToolService initialized', {
             service: 'BrowserToolService',
             registeredTools: this.toolDefinitions.length
@@ -132,7 +130,7 @@ export class BrowserToolService {
 
         const supportingClients = this.clientManager.getClientsByCapability(toolName);
         const fallbackClients = this.clientManager.getClientsByCapability('browser_api_access');
-        
+
         return supportingClients.length > 0 || fallbackClients.length > 0;
     }
 

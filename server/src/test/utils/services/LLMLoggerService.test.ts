@@ -1,11 +1,11 @@
 import { LLMLoggerService } from '../../../utils/services/LLMLoggerService';
 import { ILangGraphConfig, IDataSanitizer } from '../../../utils/interfaces/ILangGraphServices';
-import { logger } from '../../../utils/logger';
+import { logger } from '@jarvis/server-utils';
 import { LLMResult } from '@langchain/core/outputs';
 import { Serialized } from '@langchain/core/load/serializable';
 
 // Mock the logger
-jest.mock('../../../utils/logger', () => ({
+jest.mock('@jarvis/server-utils', () => ({
     logger: {
         info: jest.fn(),
         debug: jest.fn(),
@@ -33,7 +33,7 @@ describe('LLMLoggerService', () => {
         };
 
         mockLogger = logger as jest.Mocked<typeof logger>;
-        
+
         service = new LLMLoggerService(mockConfig, mockDataSanitizer);
 
         // Clear mock calls before each test
@@ -43,7 +43,7 @@ describe('LLMLoggerService', () => {
     describe('logLLMStart', () => {
         it('should log LLM start with basic information', async () => {
             const prompts = ['prompt1', 'prompt2'];
-            
+
             await service.logLLMStart('gpt-4', prompts, 'run-123', 'parent-456');
 
             expect(mockLogger.info).toHaveBeenCalledWith('LLM generation started', {
@@ -60,7 +60,7 @@ describe('LLMLoggerService', () => {
 
         it('should handle missing optional parameters', async () => {
             const prompts = ['prompt1'];
-            
+
             await service.logLLMStart('gpt-4', prompts, 'run-123');
 
             expect(mockLogger.info).toHaveBeenCalledWith('LLM generation started', {
@@ -83,7 +83,7 @@ describe('LLMLoggerService', () => {
             const extraParams = { temperature: 0.7 };
             const tags = ['tag1', 'tag2'];
             const mockLLM = { name: 'OpenAI' } as Serialized;
-            
+
             await service.logLLMStart('gpt-4', prompts, 'run-123', 'parent-456', extraParams, tags, mockLLM);
 
             expect(mockLogger.debug).toHaveBeenCalledWith('LLM prompt details', {
@@ -104,7 +104,7 @@ describe('LLMLoggerService', () => {
 
         it('should not log verbose details when verbose mode is disabled', async () => {
             const prompts = ['prompt1'];
-            
+
             await service.logLLMStart('gpt-4', prompts, 'run-123');
 
             expect(mockLogger.debug).not.toHaveBeenCalled();

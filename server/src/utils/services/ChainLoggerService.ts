@@ -1,6 +1,6 @@
 import { ChainValues } from '@langchain/core/utils/types';
 import { IChainLogger, ILangGraphConfig } from '../interfaces/ILangGraphServices';
-import { logger } from '../logger';
+import { logger } from '@jarvis/server-utils';
 
 /**
  * Service for handling chain-related logging

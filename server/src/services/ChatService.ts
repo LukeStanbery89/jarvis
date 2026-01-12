@@ -3,10 +3,9 @@ import { ChatOpenAI } from '@langchain/openai';
 import { MemorySaver } from '@langchain/langgraph';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { HumanMessage } from '@langchain/core/messages';
-import { StructuredTool } from '@langchain/core/tools';
 import { AgentResponse, ChatMessage } from '@jarvis/protocol';
-import { IHandlerContext } from '../websocket/types';
-import { logger } from '../utils/logger';
+import type { IHandlerContext } from '@jarvis/ws-server';
+import { logger } from '@jarvis/server-utils';
 import { LangGraphCallback } from '../utils/LangGraphCallback';
 import { BrowserToolService } from './BrowserToolService';
 import tools from "../tools";
@@ -58,7 +57,7 @@ export class ChatService {
 
         // Combine standard tools with browser tools
         const allTools: any[] = [...tools];
-        
+
         // Add browser tools if service is available
         if (this.browserToolService) {
             const browserTools = this.browserToolService.getTools();
@@ -112,7 +111,7 @@ export class ChatService {
             const threadId = data.sessionId || clientId; // Fallback to clientId if no sessionId
             const agentFinalState = await this.agent.invoke(
                 { messages: [new HumanMessage(data.content)] },
-                { 
+                {
                     configurable: { thread_id: threadId },
                     callbacks: [callbackHandler]
                 }
@@ -129,7 +128,7 @@ export class ChatService {
                 executionTime,
                 responseLength: responseContent.content.length,
                 totalMessages: messageCount,
-                responsePreview: responseContent.content.toString().substring(0, 150) + 
+                responsePreview: responseContent.content.toString().substring(0, 150) +
                     (responseContent.content.toString().length > 150 ? '...' : '')
             });
 

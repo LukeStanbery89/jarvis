@@ -1,17 +1,16 @@
-import { WebSocket } from 'ws';
 import { injectable, inject } from 'tsyringe';
 import { BaseHandler } from './BaseHandler';
-import { IHandlerContext, IClientRegistration } from '../types';
-import { ClientManager } from '../ClientManager';
+import type { IHandlerContext, IClientRegistration, ISocketWrapper } from '@jarvis/ws-server';
+import { ClientManager } from '@jarvis/ws-server';
 import { AuthenticationService } from '../../services/AuthenticationService';
-import { logger } from '../../utils/logger';
+import { logger } from '@jarvis/server-utils';
 
 /**
  * Handles client registration events
  * Authenticates clients and registers them with the ClientManager
  */
 @injectable()
-export class RegistrationHandler extends BaseHandler {
+export class RegistrationHandler extends BaseHandler<IClientRegistration> {
     readonly eventName = 'client_registration';
 
     constructor(
@@ -21,7 +20,7 @@ export class RegistrationHandler extends BaseHandler {
         super(clientManager);
     }
 
-    async handle(socket: { id: string; emit: (event: string, data: any) => void; disconnect: () => void }, data: IClientRegistration, context: IHandlerContext): Promise<void> {
+    async handle(socket: ISocketWrapper, data: IClientRegistration, context: IHandlerContext): Promise<void> {
         try {
             this.logActivity('Processing client registration', {
                 clientType: data.clientType,
@@ -30,7 +29,7 @@ export class RegistrationHandler extends BaseHandler {
             });
 
             // Note: Skip client registration validation for this handler since we're registering
-            
+
             // Authenticate the user
             const userInfo = await this.authService.authenticateUser(
                 data.sessionToken,
@@ -72,7 +71,7 @@ export class RegistrationHandler extends BaseHandler {
                 error: error instanceof Error ? error.message : 'Unknown error',
                 socketId: socket.id
             });
-            
+
             this.emitError(socket, 'Registration failed', {
                 reason: error instanceof Error ? error.message : 'Unknown error'
             });

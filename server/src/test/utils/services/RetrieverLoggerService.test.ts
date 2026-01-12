@@ -1,10 +1,10 @@
 import { RetrieverLoggerService } from '../../../utils/services/RetrieverLoggerService';
 import { ILangGraphConfig, IDataSanitizer } from '../../../utils/interfaces/ILangGraphServices';
-import { logger } from '../../../utils/logger';
+import { logger } from '@jarvis/server-utils';
 import { Document } from '@langchain/core/documents';
 
 // Mock the logger
-jest.mock('../../../utils/logger', () => ({
+jest.mock('@jarvis/server-utils', () => ({
     logger: {
         debug: jest.fn()
     }
@@ -30,7 +30,7 @@ describe('RetrieverLoggerService', () => {
         };
 
         mockLogger = logger as jest.Mocked<typeof logger>;
-        
+
         service = new RetrieverLoggerService(mockConfig, mockDataSanitizer);
 
         // Clear mock calls before each test
@@ -219,13 +219,13 @@ describe('RetrieverLoggerService', () => {
             service = new RetrieverLoggerService(mockConfig, mockDataSanitizer);
 
             const documents: Document[] = [
-                { 
-                    pageContent: 'Document content', 
-                    metadata: { 
+                {
+                    pageContent: 'Document content',
+                    metadata: {
                         source: 'complex-doc',
                         score: 0.95,
                         nested: { key: 'value' }
-                    } 
+                    }
                 }
             ];
 

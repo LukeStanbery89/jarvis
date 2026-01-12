@@ -1,0 +1,30 @@
+{
+    "name": "@jarvis/server-utils",
+    "version": "1.0.0",
+    "description": "Server-side utilities for Jarvis agent (logger, memoization, etc.)",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc --watch",
+        "test": "jest",
+        "clean": "rm -rf dist"
+    },
+    "author": "Luke Stanbery",
+    "license": "ISC",
+    "dependencies": {
+        "winston": "^3.11.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.19.10",
+        "typescript": "^5.3.3",
+        "jest": "^30.0.5",
+        "ts-jest": "^29.4.1"
+    }
+}

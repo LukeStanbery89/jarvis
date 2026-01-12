@@ -4,12 +4,14 @@
     "description": "J.A.R.V.I.S. - AI assistant with modular architecture",
     "private": true,
     "workspaces": [
-        "modules/protocol",
+        "browser_extension",
         "modules/device_identity",
+        "modules/protocol",
+        "modules/rag-tools-server",
+        "modules/server-utils",
         "modules/ws-client",
         "modules/ws-server",
-        "server",
-        "browser_extension"
+        "server"
     ],
     "scripts": {
         "build": "npm run build --workspaces --if-present",

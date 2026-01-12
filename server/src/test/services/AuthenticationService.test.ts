@@ -1,10 +1,10 @@
 import 'reflect-metadata';
 import { AuthenticationService } from '../../services/AuthenticationService';
-import { IUserInfo } from '../../websocket/types';
-import { logger } from '../../utils/logger';
+import type { IUserInfo } from '@jarvis/ws-server';
+import { logger } from '@jarvis/server-utils';
 
 // Mock logger
-jest.mock('../../utils/logger');
+jest.mock('@jarvis/server-utils');
 
 describe('AuthenticationService', () => {
     let authService: AuthenticationService;

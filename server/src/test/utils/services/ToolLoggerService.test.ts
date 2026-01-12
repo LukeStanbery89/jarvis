@@ -1,10 +1,10 @@
 import { ToolLoggerService } from '../../../utils/services/ToolLoggerService';
 import { ILangGraphConfig, IDataSanitizer } from '../../../utils/interfaces/ILangGraphServices';
-import { logger } from '../../../utils/logger';
+import { logger } from '@jarvis/server-utils';
 import { Serialized } from '@langchain/core/load/serializable';
 
 // Mock the logger
-jest.mock('../../../utils/logger', () => ({
+jest.mock('@jarvis/server-utils', () => ({
     logger: {
         info: jest.fn(),
         debug: jest.fn(),
@@ -32,7 +32,7 @@ describe('ToolLoggerService', () => {
         };
 
         mockLogger = logger as jest.Mocked<typeof logger>;
-        
+
         service = new ToolLoggerService(mockConfig, mockDataSanitizer);
 
         // Clear mock calls before each test
@@ -73,7 +73,7 @@ describe('ToolLoggerService', () => {
             service = new ToolLoggerService(mockConfig, mockDataSanitizer);
 
             const mockTool = { name: 'TestTool' } as Serialized;
-            
+
             await service.logToolStart(
                 'TestTool',
                 'run-123',

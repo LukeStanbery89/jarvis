@@ -1,16 +1,15 @@
-import { WebSocket } from 'ws';
 import { injectable, inject } from 'tsyringe';
 import { BaseHandler } from './BaseHandler';
-import { IHandlerContext } from '../types';
-import { ClientManager } from '../ClientManager';
+import type { IHandlerContext, ISocketWrapper } from '@jarvis/ws-server';
+import { ClientManager } from '@jarvis/ws-server';
 import { AuthenticationService } from '../../services/AuthenticationService';
 import { ChatService, CHAT_SERVICE_TOKEN } from '../../services/ChatService';
 import { ChatMessage } from '@jarvis/protocol';
-import { logger } from '../../utils/logger';
+import { logger } from '@jarvis/server-utils';
 
 /**
  * Simplified Chat Handler using LangGraph
- * 
+ *
  * Streamlined chat handling that:
  * - Uses LangGraph agents with web search capabilities
  * - Maintains separate conversation histories per client
@@ -18,7 +17,7 @@ import { logger } from '../../utils/logger';
  * - Simplified architecture with minimal service dependencies
  */
 @injectable()
-export class ChatHandler extends BaseHandler {
+export class ChatHandler extends BaseHandler<ChatMessage> {
     readonly eventName = 'chat_message';
 
     constructor(
@@ -33,7 +32,7 @@ export class ChatHandler extends BaseHandler {
     /**
      * Handle chat message using simplified LangGraph service
      */
-    async handle(socket: { id: string; emit: (event: string, data: any) => void; disconnect: () => void }, data: ChatMessage, context: IHandlerContext): Promise<void> {
+    async handle(socket: ISocketWrapper, data: ChatMessage, context: IHandlerContext): Promise<void> {
         // Validate client registration
         if (!this.validateClientRegistration(socket, context)) {
             return;

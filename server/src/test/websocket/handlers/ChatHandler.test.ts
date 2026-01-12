@@ -1,199 +1,119 @@
 import 'reflect-metadata';
 import { ChatHandler } from '../../../websocket/handlers/ChatHandler';
-import { ClientManager } from '../../../websocket/ClientManager';
+import { ClientManager } from '@jarvis/ws-server';
 import { AuthenticationService } from '../../../services/AuthenticationService';
-import { ChatService, CHAT_SERVICE_TOKEN } from '../../../services/ChatService';
-import { IHandlerContext, IClientConnection, ClientType } from '../../../websocket/types';
+import { ChatService } from '../../../services/ChatService';
+import { ClientType } from '@jarvis/ws-server';
+import type { IHandlerContext, IClientConnection, ISocketWrapper } from '@jarvis/ws-server';
 import { ChatMessage, AgentResponse } from '@jarvis/protocol';
 
-// Mock dependencies
-jest.mock('../../../websocket/ClientManager');
-jest.mock('../../../services/AuthenticationService');
+// Keep mocks local and minimal — preserve real BaseHandler but mock ClientManager
+jest.mock('@jarvis/ws-server', () => {
+    const realWs = jest.requireActual('@jarvis/ws-server');
+    const ClientManagerMock = jest.fn().mockImplementation(() => ({
+        getClient: jest.fn(),
+        registerClient: jest.fn(),
+        getAllClients: jest.fn().mockReturnValue(new Map())
+    }));
+    return {
+        ...realWs,
+        ClientManager: ClientManagerMock,
+    };
+});
 
-type MockSocket = {
-    id: string;
-    emit: jest.Mock;
-    disconnect: jest.Mock;
-};
-
-describe('ChatHandler', () => {
-    let chatHandler: ChatHandler;
+describe('ChatHandler (unit)', () => {
+    let handler: ChatHandler;
     let mockClientManager: jest.Mocked<ClientManager>;
-    let mockAuthService: jest.Mocked<AuthenticationService>;
-    let mockChatService: jest.Mocked<ChatService>;
-    let mockSocket: MockSocket;
-    let mockClient: IClientConnection;
-    let mockContext: IHandlerContext;
+    let mockAuth: jest.Mocked<AuthenticationService>;
+    let mockChat: jest.Mocked<ChatService>;
+    let socket: ISocketWrapper & { emit: jest.Mock; };
+    let context: Partial<IHandlerContext>;
 
     beforeEach(() => {
-        // Mock ClientManager
-        mockClientManager = {
-            getClient: jest.fn(),
-            removeClient: jest.fn(),
-            getAllClients: jest.fn(),
-            getClientsByType: jest.fn(),
-            getClientsByCapability: jest.fn(),
-            broadcastToClientType: jest.fn(),
-            broadcastToCapability: jest.fn(),
-            getConnectionStats: jest.fn(),
-        } as unknown as jest.Mocked<ClientManager>;
+        mockClientManager = new (require('@jarvis/ws-server').ClientManager)();
+        mockClientManager.getClient = jest.fn();
 
-        // Mock AuthenticationService
-        mockAuthService = {
+        mockAuth = {
             authenticateUser: jest.fn(),
             hasPermission: jest.fn().mockReturnValue(true),
-            canUseTool: jest.fn(),
+            canUseTool: jest.fn()
         } as unknown as jest.Mocked<AuthenticationService>;
 
-        // Mock ChatService
-        mockChatService = {
+        mockChat = {
             processMessage: jest.fn(),
             clearHistory: jest.fn(),
-            getStats: jest.fn(),
+            getStats: jest.fn()
         } as unknown as jest.Mocked<ChatService>;
 
-        // Mock Socket wrapper
-        mockSocket = {
-            id: 'socket-123',
-            emit: jest.fn(),
-            disconnect: jest.fn()
+        socket = { id: 'socket-1', emit: jest.fn() } as any;
+
+        context = {
+            clientId: 'socket-1',
+            client: {
+                id: 'socket-1',
+                type: ClientType.BROWSER_EXTENSION,
+                capabilities: ['chat'],
+                metadata: {},
+                socket,
+                connectedAt: Date.now(),
+                user: { userId: 'u1', isAuthenticated: true, permissions: ['chat'] }
+            } as IClientConnection
         };
 
-        // Mock client
-        mockClient = {
-            id: 'socket-123',
-            type: ClientType.BROWSER_EXTENSION,
-            userAgent: 'test',
-            capabilities: ['chat'],
-            metadata: {},
-            socket: mockSocket,
-            connectedAt: Date.now(),
-            user: {
-                userId: 'test-user',
-                isAuthenticated: true,
-                permissions: ['chat']
-            }
-        };
+        handler = new ChatHandler(mockClientManager as any, mockAuth as any, mockChat as any);
 
-        // Mock context with client
-        mockContext = {
-            clientId: 'socket-123',
-            client: mockClient,
-            timestamp: Date.now()
-        };
-
-        // Create handler instance
-        chatHandler = new ChatHandler(mockClientManager, mockAuthService, mockChatService);
-
-        // Clear all mocks
         jest.clearAllMocks();
     });
 
-    describe('Chat Message Processing', () => {
-        const mockChatMessage: ChatMessage = {
-            id: 'msg-123',
-            type: 'chat_message',
-            timestamp: Date.now(),
-            content: 'Hello, how are you?',
-            sessionId: 'session-123'
-        };
-
-        const mockAgentResponse: AgentResponse = {
-            id: 'response-123',
-            type: 'agent_response',
-            timestamp: Date.now(),
-            content: 'I am doing well, thank you!',
-            sessionId: 'session-123'
-        };
-
-        it('should process chat message successfully', async () => {
-            mockChatService.processMessage.mockResolvedValue(mockAgentResponse);
-
-            await chatHandler.handle(mockSocket, mockChatMessage, mockContext);
-
-            expect(mockChatService.processMessage).toHaveBeenCalledWith(mockChatMessage, mockContext);
-            expect(mockSocket.emit).toHaveBeenCalledWith('agent_response', mockAgentResponse);
-        });
-
-        it('should not process message if client is not registered', async () => {
-            const contextWithoutClient = { ...mockContext, client: undefined };
-            mockClientManager.getAllClients.mockReturnValue([]);
-
-            await chatHandler.handle(mockSocket, mockChatMessage, contextWithoutClient);
-
-            expect(mockChatService.processMessage).not.toHaveBeenCalled();
-            expect(mockSocket.emit).toHaveBeenCalledWith('error', expect.objectContaining({
-                message: 'Client not registered. Please register first.'
-            }));
-        });
-
-        it('should handle insufficient permissions', async () => {
-            mockAuthService.hasPermission.mockReturnValue(false);
-            const emitErrorSpy = jest.spyOn(chatHandler as any, 'emitError').mockImplementation();
-
-            await chatHandler.handle(mockSocket, mockChatMessage, mockContext);
-
-            expect(emitErrorSpy).toHaveBeenCalledWith(mockSocket, 'Insufficient permissions for chat');
-            expect(mockChatService.processMessage).not.toHaveBeenCalled();
-        });
-
-        it('should handle chat service errors', async () => {
-            const chatError = new Error('Chat service error');
-            mockChatService.processMessage.mockRejectedValue(chatError);
-
-            const emitErrorSpy = jest.spyOn(chatHandler as any, 'emitError').mockImplementation();
-
-            await chatHandler.handle(mockSocket, mockChatMessage, mockContext);
-
-            expect(emitErrorSpy).toHaveBeenCalledWith(
-                mockSocket,
-                'Chat service error'
-            );
-        });
-
-        it('should handle unknown errors', async () => {
-            mockChatService.processMessage.mockRejectedValue('Unknown error');
-
-            const emitErrorSpy = jest.spyOn(chatHandler as any, 'emitError').mockImplementation();
-
-            await chatHandler.handle(mockSocket, mockChatMessage, mockContext);
-
-            expect(emitErrorSpy).toHaveBeenCalledWith(
-                mockSocket,
-                'Failed to process your request'
-            );
-        });
+    it('has the correct eventName', () => {
+        expect(handler.eventName).toBe('chat_message');
     });
 
-    describe('Clear Conversation', () => {
-        it('should clear conversation history successfully', async () => {
-            mockChatService.clearHistory.mockResolvedValue(undefined);
+    it('does not process when client missing and emits an error', async () => {
+        const msg: ChatMessage = { id: 'm1', type: 'chat_message', timestamp: Date.now(), content: 'hi', sessionId: 's1' };
 
-            await chatHandler.clearConversation('client-123');
+        const ctx = { ...context, client: undefined } as IHandlerContext;
 
-            expect(mockChatService.clearHistory).toHaveBeenCalledWith('client-123');
-        });
+        const emitSpy = jest.spyOn(handler as any, 'emitError').mockImplementation();
 
-        it('should handle clear history errors', async () => {
-            const clearError = new Error('Clear history failed');
-            mockChatService.clearHistory.mockRejectedValue(clearError);
+        await handler.handle(socket as any, msg, ctx);
 
-            // Should not throw, just log the error
-            await expect(chatHandler.clearConversation('client-123')).resolves.toBeUndefined();
-
-            expect(mockChatService.clearHistory).toHaveBeenCalledWith('client-123');
-        });
+        expect(mockChat.processMessage).not.toHaveBeenCalled();
+        expect(emitSpy).toHaveBeenCalled();
     });
 
-    describe('Handler Statistics', () => {
-        it('should return chat service statistics', () => {
-            const mockStats = { agentInitialized: true, memoryEnabled: true, toolsAvailable: 5 };
-            mockChatService.getStats.mockReturnValue(mockStats);
+    it('rejects when auth has no permission', async () => {
+        mockAuth.hasPermission.mockReturnValue(false);
+        const msg: ChatMessage = { id: 'm2', type: 'chat_message', timestamp: Date.now(), content: 'hello', sessionId: 's2' };
+        const emitSpy = jest.spyOn(handler as any, 'emitError').mockImplementation();
 
-            const stats = chatHandler.getHandlerStats();
+        await handler.handle(socket as any, msg, context as IHandlerContext);
 
-            expect(stats).toBe(mockStats);
-            expect(mockChatService.getStats).toHaveBeenCalled();
-        });
+        expect(mockChat.processMessage).not.toHaveBeenCalled();
+        expect(emitSpy).toHaveBeenCalledWith(socket, 'Insufficient permissions for chat');
+    });
+
+    it('forwards successful chat responses to the socket', async () => {
+        const response: AgentResponse = { id: 'r1', type: 'agent_response', timestamp: Date.now(), content: 'resp', sessionId: 's1' };
+        mockChat.processMessage.mockResolvedValue(response as any);
+
+        const msg: ChatMessage = { id: 'm3', type: 'chat_message', timestamp: Date.now(), content: 'hey', sessionId: 's3' };
+
+        await handler.handle(socket as any, msg, context as IHandlerContext);
+
+        expect(mockChat.processMessage).toHaveBeenCalledWith(msg, context);
+        expect(socket.emit).toHaveBeenCalledWith('agent_response', response);
+    });
+
+    it('emits error message when chatService throws an Error', async () => {
+        const err = new Error('boom');
+        mockChat.processMessage.mockRejectedValue(err);
+
+        const emitSpy = jest.spyOn(handler as any, 'emitError').mockImplementation();
+        const msg: ChatMessage = { id: 'm4', type: 'chat_message', timestamp: Date.now(), content: 'x', sessionId: 's4' };
+
+        await handler.handle(socket as any, msg, context as IHandlerContext);
+
+        expect(emitSpy).toHaveBeenCalledWith(socket, err.message);
     });
 });

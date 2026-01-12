@@ -1,6 +1,6 @@
 import { Document } from '@langchain/core/documents';
 import { IRetrieverLogger, ILangGraphConfig, IDataSanitizer } from '../interfaces/ILangGraphServices';
-import { logger } from '../logger';
+import { logger } from '@jarvis/server-utils';
 
 /**
  * Service for handling retriever-related logging

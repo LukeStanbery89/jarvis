@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
-import { IUserInfo } from '../websocket/types';
-import { logger } from '../utils/logger';
+import type { IUserInfo } from '@jarvis/ws-server';
+import { logger } from '@jarvis/server-utils';
 
 /**
  * Handles user authentication and authorization for WebSocket connections

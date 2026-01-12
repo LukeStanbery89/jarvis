@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws';
-import { ISocketWrapper, ILogger } from '../types';
+import { ISocketWrapper, ILogger, MessageFormat } from '../types';
 import { generateMessageId } from './helpers';
 
 /**
@@ -15,17 +15,35 @@ export interface MessageEnvelope<T = unknown> {
 /**
  * Create a socket wrapper that converts raw WebSocket to Socket.io-like API
  * Provides a consistent interface for emitting events and disconnecting
+ *
+ * @param ws - Raw WebSocket connection
+ * @param socketId - Unique socket identifier
+ * @param messageFormat - Message format to use ('envelope' or 'legacy')
+ * @param logger - Optional logger for debugging
  */
 export function createSocketWrapper(
     ws: WebSocket,
     socketId: string,
+    // third param may be either MessageFormat or ILogger for historical callers
+    messageFormatOrLogger: MessageFormat | ILogger = 'envelope',
     logger?: ILogger
 ): ISocketWrapper {
-    const log = logger || {
-        info: () => {},
-        warn: () => {},
+    // Resolve arguments: allow calling (ws, id, logger) or (ws, id, format, logger)
+    let messageFormat: MessageFormat = 'envelope';
+    let resolvedLogger: ILogger | undefined = undefined;
+
+    if (typeof messageFormatOrLogger === 'string') {
+        messageFormat = messageFormatOrLogger;
+        resolvedLogger = logger;
+    } else if (typeof messageFormatOrLogger === 'object' && messageFormatOrLogger !== null) {
+        resolvedLogger = messageFormatOrLogger as ILogger;
+    }
+
+    const log = resolvedLogger || {
+        info: () => { },
+        warn: () => { },
         error: (message: string, meta?: any) => console.error(message, meta),
-        debug: () => {}
+        debug: () => { }
     };
 
     return {
@@ -33,7 +51,7 @@ export function createSocketWrapper(
 
         /**
          * Emit an event with data to the client
-         * Wraps data in a standard envelope and serializes as JSON
+         * Supports both envelope and legacy message formats
          */
         emit(event: string, data: unknown): void {
             if (ws.readyState !== WebSocket.OPEN) {
@@ -46,15 +64,25 @@ export function createSocketWrapper(
             }
 
             try {
-                // Wrap in standard envelope
-                const envelope: MessageEnvelope = {
-                    id: generateMessageId(),
-                    type: event,
-                    timestamp: Date.now(),
-                    payload: data
-                };
+                let message: string;
 
-                const message = JSON.stringify(envelope);
+                if (messageFormat === 'legacy') {
+                    // Legacy format: spread data at root with type field
+                    const legacyMessage = typeof data === 'object' && data !== null
+                        ? { ...data as Record<string, unknown>, type: event }
+                        : { type: event, data };
+                    message = JSON.stringify(legacyMessage);
+                } else {
+                    // Envelope format: structured message with metadata
+                    const envelope: MessageEnvelope = {
+                        id: generateMessageId(),
+                        type: event,
+                        timestamp: Date.now(),
+                        payload: data
+                    };
+                    message = JSON.stringify(envelope);
+                }
+
                 ws.send(message);
             } catch (error) {
                 log.error('Failed to send message', {

@@ -108,6 +108,13 @@ export interface IClientManagerConfig {
 }
 
 /**
+ * Message format for socket communication
+ * - 'envelope': MessageEnvelope structure with id, type, timestamp, payload (recommended)
+ * - 'legacy': Flat structure with data spread at root level (backward compatible)
+ */
+export type MessageFormat = 'envelope' | 'legacy';
+
+/**
  * WebSocket server configuration options
  */
 export interface IWebSocketServerConfig {
@@ -115,6 +122,7 @@ export interface IWebSocketServerConfig {
     maxConnections?: number;          // Maximum concurrent connections, default: unlimited
     pingInterval?: number;            // Ping interval in ms, default: 30000
     clientTimeout?: number;           // Client timeout in ms, default: 60000
+    messageFormat?: MessageFormat;    // Message format, default: 'envelope'
     cors?: {
         origin: string | string[];    // CORS origins
         credentials?: boolean;         // Allow credentials

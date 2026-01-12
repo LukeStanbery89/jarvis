@@ -1,6 +1,6 @@
 import { Serialized } from '@langchain/core/load/serializable';
 import { IToolLogger, ILangGraphConfig, IDataSanitizer } from '../interfaces/ILangGraphServices';
-import { logger } from '../logger';
+import { logger } from '@jarvis/server-utils';
 
 /**
  * Service for handling tool-related logging

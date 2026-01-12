@@ -1,10 +1,10 @@
 import { ChainLoggerService } from '../../../utils/services/ChainLoggerService';
 import { ILangGraphConfig } from '../../../utils/interfaces/ILangGraphServices';
-import { logger } from '../../../utils/logger';
+import { logger } from '@jarvis/server-utils';
 import { ChainValues } from '@langchain/core/utils/types';
 
 // Mock the logger
-jest.mock('../../../utils/logger', () => ({
+jest.mock('@jarvis/server-utils', () => ({
     logger: {
         debug: jest.fn(),
         error: jest.fn()
@@ -24,7 +24,7 @@ describe('ChainLoggerService', () => {
         };
 
         mockLogger = logger as jest.Mocked<typeof logger>;
-        
+
         service = new ChainLoggerService(mockConfig);
 
         // Clear mock calls before each test

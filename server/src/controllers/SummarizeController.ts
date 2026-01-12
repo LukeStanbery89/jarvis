@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { injectable, inject } from 'tsyringe';
 import { ChatOpenAI } from '@langchain/openai';
-import { logger } from '../utils/logger';
+import { logger } from '@jarvis/server-utils';
 
 @injectable()
 export class SummarizeController {

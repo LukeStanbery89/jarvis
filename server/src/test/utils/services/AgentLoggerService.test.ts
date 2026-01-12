@@ -1,10 +1,10 @@
 import { AgentLoggerService } from '../../../utils/services/AgentLoggerService';
 import { ILangGraphConfig, IDataSanitizer } from '../../../utils/interfaces/ILangGraphServices';
-import { logger } from '../../../utils/logger';
+import { logger } from '@jarvis/server-utils';
 import { AgentAction, AgentFinish } from '@langchain/core/agents';
 
 // Mock the logger
-jest.mock('../../../utils/logger', () => ({
+jest.mock('@jarvis/server-utils', () => ({
     logger: {
         info: jest.fn(),
         debug: jest.fn()
@@ -31,7 +31,7 @@ describe('AgentLoggerService', () => {
         };
 
         mockLogger = logger as jest.Mocked<typeof logger>;
-        
+
         service = new AgentLoggerService(mockConfig, mockDataSanitizer);
 
         // Clear mock calls before each test
@@ -141,9 +141,9 @@ describe('AgentLoggerService', () => {
     describe('logAgentEnd', () => {
         it('should log agent finish with basic information', async () => {
             const action: AgentFinish = {
-                returnValues: { 
+                returnValues: {
                     output: 'Final answer',
-                    confidence: 0.95 
+                    confidence: 0.95
                 },
                 log: 'Agent completed successfully'
             };
@@ -183,7 +183,7 @@ describe('AgentLoggerService', () => {
             service = new AgentLoggerService(mockConfig, mockDataSanitizer);
 
             const action: AgentFinish = {
-                returnValues: { 
+                returnValues: {
                     output: 'Final detailed answer',
                     sources: ['source1', 'source2']
                 },
@@ -201,7 +201,7 @@ describe('AgentLoggerService', () => {
                 returnValues: { sanitized: { output: 'Final detailed answer', sources: ['source1', 'source2'] } }
             });
 
-            expect(mockDataSanitizer.sanitizeToolInput).toHaveBeenCalledWith({ 
+            expect(mockDataSanitizer.sanitizeToolInput).toHaveBeenCalledWith({
                 output: 'Final detailed answer',
                 sources: ['source1', 'source2']
             });
@@ -239,7 +239,7 @@ describe('AgentLoggerService', () => {
 
         it('should handle complex return values structure', async () => {
             const action: AgentFinish = {
-                returnValues: { 
+                returnValues: {
                     output: 'Answer',
                     metadata: {
                         timestamp: '2024-01-01',
