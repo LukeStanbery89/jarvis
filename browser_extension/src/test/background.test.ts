@@ -1,5 +1,5 @@
 // Tests for background script connection status broadcasting functionality
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+// Use Jest globals
 
 // Mock WebSocketManager
 const mockWebSocketManager = {

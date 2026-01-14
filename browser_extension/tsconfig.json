@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "declaration": false,
     "sourceMap": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": false,
     "noEmitOnError": true,
     "types": ["chrome", "vitest/globals"],

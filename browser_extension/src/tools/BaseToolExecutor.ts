@@ -1,9 +1,10 @@
 import { ToolExecutionRequest, ToolExecutionResponse } from '@jarvis/protocol';
 import { logger } from '../utils/logger';
+import { WebSocketClient } from '@jarvis/ws-client';
 
 /**
  * Base class for browser extension tool executors
- * 
+ *
  * Provides:
  * - Common interface for tool execution
  * - Standard response formatting
@@ -13,6 +14,15 @@ import { logger } from '../utils/logger';
 
 export abstract class BaseToolExecutor {
     abstract readonly toolName: string;
+
+    constructor(protected websocketManager?: WebSocketClient) {}
+
+    /**
+     * Set the WebSocket manager reference (for late initialization)
+     */
+    setWebSocketManager(websocketManager: WebSocketClient): void {
+        this.websocketManager = websocketManager;
+    }
     
     /**
      * Execute the tool with the given request
@@ -86,10 +96,8 @@ export abstract class BaseToolExecutor {
 
         try {
             // Send status update directly through WebSocket manager
-            // Since tools run in background script context, we can access websocketManager directly
-            const { websocketManager } = await import('../websocket');
-            if (websocketManager.connected) {
-                websocketManager.sendMessage('tool_execution_status', statusUpdate);
+            if (this.websocketManager && this.websocketManager.connected) {
+                this.websocketManager.sendMessage('tool_execution_status', statusUpdate);
             }
         } catch (error) {
             logger.error('Failed to send status update', {

@@ -3,10 +3,11 @@ import { ExtractPageContentTool } from './ExtractPageContentTool';
 import { OpenUrlTool } from './OpenUrlTool';
 import { ToolExecutionRequest, ToolExecutionResponse, ToolDefinition } from '@jarvis/protocol';
 import { logger } from '../utils/logger';
+import { WebSocketClient } from '@jarvis/ws-client';
 
 /**
  * Client-side tool execution manager
- * 
+ *
  * Handles:
  * - Tool registration and discovery
  * - Execution request routing
@@ -17,8 +18,10 @@ import { logger } from '../utils/logger';
 export class ToolExecutor {
     private tools = new Map<string, BaseToolExecutor>();
     private executionTimeouts = new Map<string, NodeJS.Timeout>();
-    
-    constructor() {
+    private websocketManager?: WebSocketClient;
+
+    constructor(websocketManager?: WebSocketClient) {
+        this.websocketManager = websocketManager;
         this.registerBuiltinTools();
         logger.info('ToolExecutor initialized', {
             service: 'ToolExecutor',
@@ -27,11 +30,22 @@ export class ToolExecutor {
     }
 
     /**
+     * Set the WebSocket manager reference (for late initialization)
+     */
+    setWebSocketManager(websocketManager: WebSocketClient): void {
+        this.websocketManager = websocketManager;
+        // Update existing tools with the websocket manager
+        for (const tool of this.tools.values()) {
+            tool.setWebSocketManager(websocketManager);
+        }
+    }
+
+    /**
      * Register built-in tools
      */
     private registerBuiltinTools(): void {
-        this.registerTool(new ExtractPageContentTool());
-        this.registerTool(new OpenUrlTool());
+        this.registerTool(new ExtractPageContentTool(this.websocketManager));
+        this.registerTool(new OpenUrlTool(this.websocketManager));
     }
 
     /**

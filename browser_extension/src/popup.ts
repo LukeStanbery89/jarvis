@@ -1,5 +1,4 @@
 // WebSocket connection now handled by background script
-// import { websocketManager } from './websocket';
 import { marked } from 'marked';
 
 // Configure marked for security and proper rendering

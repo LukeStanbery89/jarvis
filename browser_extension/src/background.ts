@@ -1,17 +1,18 @@
 console.log('[Background] Background script starting...');
-import { websocketManager } from './websocket';
+import { WebSocketClient } from '@jarvis/ws-client';
+import { DeviceIdentity, BrowserStorageAdapter, BrowserIdGenerator } from '@jarvis/device-identity/browser';
 import { ToolExecutor } from './tools/ToolExecutor';
-console.log('[Background] WebSocket manager imported successfully');
+console.log('[Background] WebSocket client modules imported successfully');
 
 /**
  * Background script for persistent WebSocket connection
- * 
+ *
  * This script runs continuously in the background, maintaining a persistent
  * connection to the server even when the popup is closed. This eliminates
  * the connection churn that was occurring on each popup open/close cycle.
- * 
+ *
  * FIXME: Long-term memory management issues to address:
- * - Server-side conversation contexts accumulate indefinitely due to LangGraph 
+ * - Server-side conversation contexts accumulate indefinitely due to LangGraph
  *   MemorySaver limitation (cannot clear individual client threads)
  * - Need to implement conversation history cleanup/rotation
  * - Consider implementing session timeout or max conversation length limits
@@ -27,6 +28,9 @@ let isInitializing = false;
 // Tool executor for handling server tool requests
 const toolExecutor = new ToolExecutor();
 
+// WebSocket client instance (initialized in initializeBackgroundConnection)
+let websocketManager: WebSocketClient;
+
 // Initialize WebSocket connection when background script starts
 initializeBackgroundConnection();
 
@@ -35,33 +39,87 @@ initializeBackgroundConnection();
  */
 async function initializeBackgroundConnection() {
     // Prevent duplicate initialization
-    if (isInitializing || websocketManager.connected) {
+    if (isInitializing || (websocketManager && websocketManager.connected)) {
         console.log('[Background] Connection already initialized or in progress');
         return;
     }
-    
+
     isInitializing = true;
-    
+
     try {
-        console.log('[Background] Initializing persistent WebSocket connection...');
+        console.log('[Background] Initializing device identity...');
+
+        // Initialize device identity for the browser extension
+        const deviceIdentity = new DeviceIdentity(
+            'browser_extension',
+            new BrowserStorageAdapter(),
+            new BrowserIdGenerator(),
+            toolExecutor.getCapabilities()
+        );
+
+        await deviceIdentity.initialize();
+        const identity = deviceIdentity.getIdentity();
+        console.log('[Background] Device identity initialized:', identity.deviceId);
+
+        // Get server URL from storage
+        const serverUrl = await getServerUrl();
+        console.log('[Background] Using server URL:', serverUrl);
+
+        // Create WebSocket client with dependencies
+        websocketManager = new WebSocketClient(
+            {
+                deviceIdentity: identity,
+                storage: new BrowserStorageAdapter(),
+                capabilities: toolExecutor.getCapabilities()
+            },
+            {
+                serverUrl,
+                maxReconnectAttempts: 5,
+                reconnectDelay: 1000,
+                connectedPollInterval: 30000,
+                disconnectedPollInterval: 5000,
+                autoConnect: false
+            }
+        );
+
+        // Set websocket manager reference in tool executor
+        toolExecutor.setWebSocketManager(websocketManager);
+
+        console.log('[Background] WebSocket client created, connecting...');
         const connected = await websocketManager.connect();
-        
+
         if (connected) {
             console.log('[Background] ✓ WebSocket connected successfully');
-            
+
             // Set up event listeners for server messages
             setupWebSocketEventListeners();
-            
+
             // Register extension capabilities with server
             registerExtensionCapabilities();
         } else {
             console.warn('[Background] ✗ Failed to connect to WebSocket server');
-            // TODO: Implement retry logic with exponential backoff
+            // Reconnection logic is handled automatically by WebSocketClient
         }
     } catch (error) {
         console.error('[Background] WebSocket initialization error:', error);
     } finally {
         isInitializing = false;
+    }
+}
+
+/**
+ * Get server URL from storage
+ */
+async function getServerUrl(): Promise<string> {
+    const SERVER_URL_KEY = 'jarvis_server_url';
+    const DEFAULT_SERVER_URL = 'ws://127.0.0.1:3000';
+
+    try {
+        const result = await chrome.storage.local.get([SERVER_URL_KEY]);
+        return result[SERVER_URL_KEY] || DEFAULT_SERVER_URL;
+    } catch (error) {
+        console.error('[Background] Failed to load server URL:', error);
+        return DEFAULT_SERVER_URL;
     }
 }
 
@@ -301,7 +359,19 @@ function broadcastToPopups(type: string, data: any) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'server_url_changed') {
         console.log('[Background] Server URL changed to:', message.serverUrl);
-        websocketManager.updateServerUrl(message.serverUrl)
+
+        // Disconnect from old server
+        if (websocketManager && websocketManager.connected) {
+            websocketManager.disconnect();
+        }
+
+        // Save new server URL to storage
+        chrome.storage.local.set({ 'jarvis_server_url': message.serverUrl })
+            .then(() => {
+                console.log('[Background] Server URL saved to storage');
+                // Reinitialize connection with new URL
+                return initializeBackgroundConnection();
+            })
             .then(() => {
                 console.log('[Background] Successfully updated server URL and reconnected');
                 sendResponse({ success: true });
@@ -310,6 +380,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 console.error('[Background] Failed to update server URL:', error);
                 sendResponse({ success: false, error: error.message });
             });
+
         return true; // Keep message channel open for async response
     }
 });
