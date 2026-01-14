@@ -1,7 +1,7 @@
 console.log('[Background] Background script starting...');
 import { WebSocketClient } from '@jarvis/ws-client';
 import { DeviceIdentity, BrowserStorageAdapter, BrowserIdGenerator } from '@jarvis/device-identity/browser';
-import { ToolExecutor } from './tools/ToolExecutor';
+import { ToolExecutor } from '@jarvis/rag-tools-browser';
 console.log('[Background] WebSocket client modules imported successfully');
 
 /**

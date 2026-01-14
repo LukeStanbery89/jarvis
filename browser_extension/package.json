@@ -23,6 +23,7 @@
         "@jarvis/ws-client": "^1.0.0",
         "@jarvis/device-identity": "^1.0.0",
         "@jarvis/protocol": "^1.0.0",
+        "@jarvis/rag-tools-browser": "^1.0.0",
         "marked": "^12.0.2"
     },
     "devDependencies": {

@@ -1,10 +1,10 @@
 import { BaseToolExecutor } from './BaseToolExecutor';
 import { ToolExecutionRequest, ToolExecutionResponse } from '@jarvis/protocol';
-import { logger } from '../utils/logger';
+import { logger } from './utils/logger';
 
 /**
  * Tool for extracting content from the current web page
- * 
+ *
  * Capabilities:
  * - Extract selected text if user has made a selection
  * - Fall back to semantic page content extraction
@@ -35,9 +35,9 @@ export class ExtractPageContentTool extends BaseToolExecutor {
         try {
             // Extract page content using enhanced logic
             const pageData = await this.extractPageContent();
-            
+
             const executionTime = Date.now() - startTime;
-            
+
             logger.info('Page content extraction completed', {
                 service: 'ExtractPageContentTool',
                 executionId: request.executionId,
@@ -47,10 +47,10 @@ export class ExtractPageContentTool extends BaseToolExecutor {
             });
 
             return this.createSuccessResponse(request, pageData, executionTime);
-            
+
         } catch (error) {
             const executionTime = Date.now() - startTime;
-            
+
             logger.error('Page content extraction failed', {
                 service: 'ExtractPageContentTool',
                 executionId: request.executionId,
@@ -59,8 +59,8 @@ export class ExtractPageContentTool extends BaseToolExecutor {
             });
 
             return this.createErrorResponse(
-                request, 
-                'browser_api', 
+                request,
+                'browser_api',
                 `Failed to extract page content: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 false,
                 executionTime
@@ -77,13 +77,13 @@ export class ExtractPageContentTool extends BaseToolExecutor {
         // Check for selected text first
         const selection = window.getSelection();
         const selectedText = selection?.toString().trim() || '';
-        
+
         if (selectedText && selectedText.length > 0) {
             logger.debug('Using selected text for content extraction', {
                 service: 'ExtractPageContentTool',
                 selectionLength: selectedText.length
             });
-            
+
             return {
                 title: title,
                 content: `SELECTED TEXT: ${selectedText}`,
@@ -143,22 +143,23 @@ export class ExtractPageContentTool extends BaseToolExecutor {
         // Skip elements that are likely ads or unwanted content
         const classList = el.className.toLowerCase();
         const id = el.id.toLowerCase();
-        const isAd = classList.includes('ad') || 
+        const isAd = classList.includes('ad') ||
                     classList.includes('advertisement') ||
-                    classList.includes('sponsored') || 
+                    classList.includes('sponsored') ||
                     classList.includes('promo') ||
-                    id.includes('ad') || 
+                    id.includes('ad') ||
                     id.includes('ads');
 
         if (isAd) return false;
 
         // Skip elements that are not visible
         const style = window.getComputedStyle(el);
+        const htmlEl = el as HTMLElement;
         const isVisible = style.display !== 'none' &&
             style.visibility !== 'hidden' &&
             style.opacity !== '0' &&
-            el.offsetWidth > 0 &&
-            el.offsetHeight > 0;
+            htmlEl.offsetWidth > 0 &&
+            htmlEl.offsetHeight > 0;
 
         return isVisible;
     }

@@ -1,6 +1,6 @@
 /**
- * Simple logging utility for browser extension
- * 
+ * Simple logging utility for browser extension tools
+ *
  * Provides structured logging with service identification
  * and different log levels for development and debugging.
  */
@@ -57,10 +57,10 @@ class BrowserLogger {
      */
     private log(level: string, message: string, context?: LogContext): void {
         const timestamp = new Date().toISOString();
-        const service = context?.service || 'BrowserExtension';
-        
+        const service = context?.service || 'BrowserTools';
+
         const logMessage = `[${timestamp}] [${level}] [${service}] ${message}`;
-        
+
         if (context && Object.keys(context).length > 1) {
             // Remove service from context to avoid duplication
             const { service: _, ...restContext } = context;

@@ -1,5 +1,5 @@
 import { ToolExecutionRequest, ToolExecutionResponse } from '@jarvis/protocol';
-import { logger } from '../utils/logger';
+import { logger } from './utils/logger';
 import { WebSocketClient } from '@jarvis/ws-client';
 
 /**
@@ -23,7 +23,7 @@ export abstract class BaseToolExecutor {
     setWebSocketManager(websocketManager: WebSocketClient): void {
         this.websocketManager = websocketManager;
     }
-    
+
     /**
      * Execute the tool with the given request
      */

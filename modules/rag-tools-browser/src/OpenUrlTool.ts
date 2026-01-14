@@ -1,10 +1,10 @@
 import { BaseToolExecutor } from './BaseToolExecutor';
 import { ToolExecutionRequest, ToolExecutionResponse } from '@jarvis/protocol';
-import { logger } from '../utils/logger';
+import { logger } from './utils/logger';
 
 /**
  * Tool for opening URLs in the current tab or new tab
- * 
+ *
  * Capabilities:
  * - Navigate current tab to specified URL
  * - Open URL in new tab (optional)
@@ -38,7 +38,7 @@ export class OpenUrlTool extends BaseToolExecutor {
         try {
             // Validate parameters
             this.validateParameters(request.parameters, ['url']);
-            const params = request.parameters as OpenUrlParams;
+            const params = request.parameters as unknown as OpenUrlParams;
 
             // Send status update
             await this.sendStatusUpdate(request, 'executing', 0, 'Navigating to URL...');
@@ -54,11 +54,6 @@ export class OpenUrlTool extends BaseToolExecutor {
             await this.sendStatusUpdate(request, 'executing', 50, `Navigating...`);
             const result = await this.navigateToUrl(normalizedParams, request);
 
-            // Send completion status
-            if (result.success) {
-                await this.sendStatusUpdate(request, 'completed', 100, result.message);
-            }
-
             const executionTime = Date.now() - startTime;
 
             logger.info('URL navigation completed', {
@@ -70,7 +65,21 @@ export class OpenUrlTool extends BaseToolExecutor {
                 executionTime
             });
 
-            return this.createSuccessResponse(request, result, executionTime);
+            if (result.success) {
+                // Send completion status
+                await this.sendStatusUpdate(request, 'completed', 100, result.message);
+                return this.createSuccessResponse(request, result, executionTime);
+            } else {
+                // Send failure status
+                await this.sendStatusUpdate(request, 'failed', 100, result.message);
+                return this.createErrorResponse(
+                    request,
+                    'browser_api',
+                    result.message,
+                    true, // Navigation failures are usually recoverable
+                    executionTime
+                );
+            }
 
         } catch (error) {
             const executionTime = Date.now() - startTime;
@@ -96,6 +105,14 @@ export class OpenUrlTool extends BaseToolExecutor {
      * Validate URL format and security
      */
     private validateUrl(url: string): void {
+        // Check for dangerous protocols in the original URL first
+        const dangerousProtocols = ['javascript:', 'data:', 'file:'];
+        for (const protocol of dangerousProtocols) {
+            if (url.toLowerCase().startsWith(protocol)) {
+                throw new Error(`Forbidden protocol: ${protocol}`);
+            }
+        }
+
         let urlToValidate = url;
 
         // Add https:// if no protocol is specified
@@ -105,12 +122,6 @@ export class OpenUrlTool extends BaseToolExecutor {
 
         try {
             const urlObj = new URL(urlToValidate);
-
-            // Block dangerous protocols
-            const dangerousProtocols = ['javascript:', 'data:', 'file:'];
-            if (dangerousProtocols.includes(urlObj.protocol)) {
-                throw new Error(`Forbidden protocol: ${urlObj.protocol}`);
-            }
 
             // Ensure it's http or https
             if (!['http:', 'https:'].includes(urlObj.protocol)) {

@@ -2,7 +2,7 @@ import { BaseToolExecutor } from './BaseToolExecutor';
 import { ExtractPageContentTool } from './ExtractPageContentTool';
 import { OpenUrlTool } from './OpenUrlTool';
 import { ToolExecutionRequest, ToolExecutionResponse, ToolDefinition } from '@jarvis/protocol';
-import { logger } from '../utils/logger';
+import { logger } from './utils/logger';
 import { WebSocketClient } from '@jarvis/ws-client';
 
 /**
@@ -71,7 +71,7 @@ export class ToolExecutor {
         });
 
         const tool = this.tools.get(request.toolName);
-        
+
         if (!tool) {
             logger.error('Tool not found', {
                 service: 'ToolExecutor',
@@ -79,7 +79,7 @@ export class ToolExecutor {
                 executionId: request.executionId,
                 availableTools: Array.from(this.tools.keys())
             });
-            
+
             return this.createErrorResponse(
                 request,
                 'validation',
@@ -98,7 +98,7 @@ export class ToolExecutor {
                 const timeoutId = setTimeout(() => {
                     reject(new Error(`Tool execution timeout after ${timeout}ms`));
                 }, timeout);
-                
+
                 this.executionTimeouts.set(request.executionId, timeoutId);
             });
 
@@ -110,7 +110,7 @@ export class ToolExecutor {
 
             // Clear timeout on success
             this.clearExecutionTimeout(request.executionId);
-            
+
             logger.info('Tool execution completed successfully', {
                 service: 'ToolExecutor',
                 toolName: request.toolName,
@@ -119,14 +119,14 @@ export class ToolExecutor {
             });
 
             return response;
-            
+
         } catch (error) {
             // Clear timeout on error
             this.clearExecutionTimeout(request.executionId);
-            
+
             const executionTime = Date.now() - startTime;
             const isTimeout = error instanceof Error && error.message.includes('timeout');
-            
+
             logger.error('Tool execution failed', {
                 service: 'ToolExecutor',
                 toolName: request.toolName,
@@ -151,7 +151,7 @@ export class ToolExecutor {
      */
     getAvailableTools(): ToolDefinition[] {
         const definitions: ToolDefinition[] = [];
-        
+
         for (const [toolName, tool] of this.tools) {
             try {
                 // Each tool class should have a static getToolDefinition method
@@ -172,7 +172,7 @@ export class ToolExecutor {
                 });
             }
         }
-        
+
         return definitions;
     }
 
@@ -186,12 +186,12 @@ export class ToolExecutor {
             'navigation',
             'tab_management'
         ];
-        
+
         // Add specific tool capabilities
         for (const toolName of this.tools.keys()) {
             capabilities.push(toolName);
         }
-        
+
         return capabilities;
     }
 
@@ -247,7 +247,7 @@ export class ToolExecutor {
             clearTimeout(timeoutId);
         }
         this.executionTimeouts.clear();
-        
+
         logger.info('ToolExecutor cleaned up', {
             service: 'ToolExecutor'
         });
