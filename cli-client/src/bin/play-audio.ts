@@ -1,40 +1,32 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process');
-const { existsSync } = require('fs');
-const { resolve } = require('path');
+import { createReadStream, existsSync } from 'fs';
+import { resolve } from 'path';
+import { spawn } from 'child_process';
 
 /**
  * Plays an audio file using ffplay.
- *
- * ffplay is part of the FFmpeg suite and provides cross-platform audio playback.
- * It supports a wide variety of audio formats and codecs.
- *
- * @param {string} filePath - Path to the audio file to play
- * @returns {Promise<void>}
+ * This script handles file playback directly, letting ffplay detect the format.
  */
-function playAudio(filePath) {
+
+/**
+ * Plays an audio file using ffplay.
+ * @param filePath - Path to the audio file to play
+ */
+function playAudio(filePath: string): Promise<void> {
     return new Promise((resolve, reject) => {
-        const command = 'ffplay';
-        // ffplay arguments:
-        // -nodisp: no video display (audio only)
-        // -autoexit: exit when playback finishes
-        // -hide_banner: suppress FFmpeg banner
         const args = ['-nodisp', '-autoexit', '-hide_banner', filePath];
 
-        console.log(`Playing ${filePath} using ${command}...`);
+        console.log(`Playing ${filePath} using ffplay...`);
 
-        // Spawn the audio player process
-        const player = spawn(command, args);
+        const player = spawn('ffplay', args);
 
-        // Capture stderr for error messages
         let stderr = '';
-        player.stderr.on('data', (data) => {
+        player.stderr?.on('data', (data: Buffer) => {
             stderr += data.toString();
         });
 
-        // Handle process completion
-        player.on('close', (code) => {
+        player.on('close', (code: number | null) => {
             if (code === 0) {
                 console.log('Playback completed successfully.');
                 resolve();
@@ -43,11 +35,10 @@ function playAudio(filePath) {
             }
         });
 
-        // Handle process errors (e.g., command not found)
-        player.on('error', (err) => {
+        player.on('error', (err: NodeJS.ErrnoException) => {
             if (err.code === 'ENOENT') {
                 reject(new Error(
-                    `Audio player '${command}' not found. ` +
+                    "Audio player 'ffplay' not found. " +
                     'Please install FFmpeg with ffplay included. ' +
                     'On macOS: brew install ffmpeg'
                 ));
@@ -61,8 +52,7 @@ function playAudio(filePath) {
 /**
  * Main entry point for the CLI script.
  */
-async function main() {
-    // Parse command-line arguments
+async function main(): Promise<void> {
     const args = process.argv.slice(2);
 
     if (args.length === 0) {
@@ -73,21 +63,18 @@ async function main() {
 
     const filePath = resolve(args[0]);
 
-    // Validate that the file exists
     if (!existsSync(filePath)) {
         console.error(`Error: File not found: ${filePath}`);
         process.exit(1);
     }
 
-    // Play the audio file
     try {
         await playAudio(filePath);
         process.exit(0);
     } catch (error) {
-        console.error(`Error: ${error.message}`);
+        console.error(`Error: ${(error as Error).message}`);
         process.exit(1);
     }
 }
 
-// Run the script
 main();

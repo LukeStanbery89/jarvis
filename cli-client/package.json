@@ -2,14 +2,19 @@
     "name": "@jarvis/cli-client",
     "version": "1.0.0",
     "description": "CLI client for J.A.R.V.I.S. audio playback",
-    "main": "play-audio.js",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "bin": {
-        "play-audio": "./play-audio.js",
-        "stream-audio": "./stream-audio.js",
-        "wav-to-pcm": "./wav-to-pcm.js"
+        "play-audio": "./dist/bin/play-audio.js",
+        "stream-audio": "./dist/bin/stream-audio.js",
+        "wav-to-pcm": "./dist/bin/wav-to-pcm.js"
     },
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "build": "tsc",
+        "watch": "tsc --watch",
+        "clean": "rm -rf dist",
+        "rebuild": "npm run clean && npm run build"
     },
     "keywords": [
         "audio",
@@ -17,5 +22,9 @@
         "jarvis"
     ],
     "author": "Luke Stanbery",
-    "license": "ISC"
+    "license": "ISC",
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "typescript": "^5.3.3"
+    }
 }
