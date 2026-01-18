@@ -5,7 +5,8 @@
     "main": "play-audio.js",
     "bin": {
         "play-audio": "./play-audio.js",
-        "stream-audio": "./stream-audio.js"
+        "stream-audio": "./stream-audio.js",
+        "wav-to-pcm": "./wav-to-pcm.js"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
