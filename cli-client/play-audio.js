@@ -1,36 +1,26 @@
 #!/usr/bin/env node
 
 const { spawn } = require('child_process');
-const { platform } = require('os');
 const { existsSync } = require('fs');
 const { resolve } = require('path');
 
 /**
- * Plays an audio file using native system commands.
+ * Plays an audio file using ffplay.
  *
- * Supported platforms:
- * - macOS: Uses afplay
- * - Linux (Raspberry Pi OS): Uses aplay
+ * ffplay is part of the FFmpeg suite and provides cross-platform audio playback.
+ * It supports a wide variety of audio formats and codecs.
  *
  * @param {string} filePath - Path to the audio file to play
  * @returns {Promise<void>}
  */
 function playAudio(filePath) {
     return new Promise((resolve, reject) => {
-        const currentPlatform = platform();
-        let command, args;
-
-        // Determine the audio player command based on platform
-        if (currentPlatform === 'darwin') {
-            command = 'afplay';
-            args = [filePath];
-        } else if (currentPlatform === 'linux') {
-            command = 'aplay';
-            args = [filePath];
-        } else {
-            reject(new Error(`Unsupported platform: ${currentPlatform}. This script supports macOS (darwin) and Linux only.`));
-            return;
-        }
+        const command = 'ffplay';
+        // ffplay arguments:
+        // -nodisp: no video display (audio only)
+        // -autoexit: exit when playback finishes
+        // -hide_banner: suppress FFmpeg banner
+        const args = ['-nodisp', '-autoexit', '-hide_banner', filePath];
 
         console.log(`Playing ${filePath} using ${command}...`);
 
@@ -58,9 +48,8 @@ function playAudio(filePath) {
             if (err.code === 'ENOENT') {
                 reject(new Error(
                     `Audio player '${command}' not found. ` +
-                    (currentPlatform === 'linux'
-                        ? 'Please install it with: sudo apt-get install alsa-utils'
-                        : 'This should be built into macOS.')
+                    'Please install FFmpeg with ffplay included. ' +
+                    'On macOS: brew install ffmpeg'
                 ));
             } else {
                 reject(err);
