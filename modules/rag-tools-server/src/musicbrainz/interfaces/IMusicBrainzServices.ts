@@ -83,7 +83,7 @@ export interface MusicBrainzConfig {
 export class MusicBrainzConfigImpl implements MusicBrainzConfig {
     constructor(
         public readonly baseUrl: string = 'https://musicbrainz.org/ws/2',
-        public readonly userAgent: string = 'LangGraph-Agent/1.0 (agent-server)',
+        public readonly userAgent: string = 'LangGraph-Agent/1.0 (@jarvis/server)',
         public readonly maxResults: number = 5,
         public readonly maxDetailRequests: number = 3,
         public readonly requestDelayMs: number = 100,
