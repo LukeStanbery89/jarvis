@@ -28,6 +28,7 @@
     "license": "ISC",
     "dependencies": {
         "@jarvis/audio": "^1.0.0",
+        "@jarvis/audio-stream": "^1.0.0",
         "ws": "^8.18.0"
     },
     "devDependencies": {

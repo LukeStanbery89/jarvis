@@ -3,14 +3,16 @@
 import { spawn } from 'child_process';
 import { existsSync, promises as fs } from 'fs';
 import { resolve } from 'path';
-import { WebSocketServer, WebSocket } from 'ws';
 import {
-    AudioEncoder,
     AudioGenerator,
     DEFAULT_AUDIO_FORMAT,
-    serializeChunk,
-    SerializedAudioChunk,
 } from '@jarvis/audio';
+import {
+    AudioStreamServer,
+    ClientConnectEvent,
+    ClientDisconnectEvent,
+    StreamEndEvent,
+} from '@jarvis/audio-stream';
 
 /**
  * Configuration for the audio WebSocket server.
@@ -26,18 +28,6 @@ interface ServerConfig {
     duration?: number;
     /** Path to WAV file (for wav mode) */
     wavPath?: string;
-}
-
-/**
- * Statistics for audio streaming.
- */
-interface StreamStats {
-    /** Total chunks sent */
-    chunksSent: number;
-    /** Total bytes sent (serialized JSON) */
-    bytesSent: number;
-    /** Stream start time */
-    startTime: number;
 }
 
 /**
@@ -203,50 +193,6 @@ async function wavToPcm(wavPath: string): Promise<Buffer> {
 }
 
 /**
- * Streams audio chunks to a WebSocket client with real-time pacing.
- * Updates timestamps at send time to reflect actual transmission time.
- */
-async function streamToClient(
-    ws: WebSocket,
-    chunks: SerializedAudioChunk[],
-    clientId: string
-): Promise<StreamStats> {
-    const stats: StreamStats = {
-        chunksSent: 0,
-        bytesSent: 0,
-        startTime: Date.now(),
-    };
-
-    for (const chunk of chunks) {
-        if (ws.readyState !== WebSocket.OPEN) {
-            console.log(`[${clientId}] Client disconnected during stream`);
-            break;
-        }
-
-        // Update timestamp to current time for accurate latency measurement
-        const chunkToSend = { ...chunk, timestamp: Date.now() };
-        const json = JSON.stringify(chunkToSend);
-        ws.send(json);
-        stats.chunksSent++;
-        stats.bytesSent += json.length;
-
-        console.log(
-            `[${clientId}] Sent chunk #${chunk.sequenceNumber} ` +
-            `(${chunk.data.length} bytes base64, ${chunk.durationMs}ms duration` +
-            `${chunk.isFinal ? ', FINAL' : ''})`
-        );
-
-        // Pace the stream to match real-time audio playback
-        // Wait the full chunk duration to simulate real-time delivery
-        if (!chunk.isFinal) {
-            await new Promise(resolve => setTimeout(resolve, chunk.durationMs));
-        }
-    }
-
-    return stats;
-}
-
-/**
  * Main entry point.
  */
 async function main(): Promise<void> {
@@ -280,81 +226,60 @@ async function main(): Promise<void> {
 
     console.log(`PCM data prepared: ${pcmData.length} bytes`);
     console.log(`Format: PCM S16LE mono ${DEFAULT_AUDIO_FORMAT.sampleRate} Hz`);
-
-    // Encode PCM to chunks
     console.log('');
-    console.log('Encoding audio to chunks...');
-    const encoder = new AudioEncoder({
-        chunkDurationMs: 100,
-        format: DEFAULT_AUDIO_FORMAT,
+
+    // Create the AudioStreamServer - replaces ~50 lines of boilerplate!
+    const server = new AudioStreamServer({
+        port: config.port,
+        senderConfig: {
+            chunkDurationMs: 100,
+            format: DEFAULT_AUDIO_FORMAT,
+            realTimePacing: true,
+        },
     });
 
-    const audioChunks = encoder.encode(pcmData);
-    const finalChunks = encoder.flush();
-    const allChunks = [...audioChunks, ...finalChunks];
-
-    // Serialize all chunks
-    const serializedChunks = allChunks.map(serializeChunk);
-    const totalJsonSize = serializedChunks.reduce((sum, c) => sum + JSON.stringify(c).length, 0);
-
-    console.log(`Encoded ${allChunks.length} chunks`);
-    console.log(`Total serialized size: ${totalJsonSize} bytes`);
-    console.log(`Stream ID: ${allChunks[0]?.streamId || 'N/A'}`);
-
-    // Start WebSocket server
-    console.log('');
-    console.log(`Starting WebSocket server on ws://127.0.0.1:${config.port}`);
-
-    const wss = new WebSocketServer({ port: config.port });
-    let clientCounter = 0;
-
-    wss.on('listening', () => {
-        console.log(`Server listening on ws://127.0.0.1:${config.port}`);
-        console.log('Waiting for clients to connect...');
-        console.log('');
-    });
-
-    wss.on('connection', async (ws: WebSocket) => {
-        const clientId = `client-${++clientCounter}`;
+    // Handle client connections
+    server.on('client:connect', ({ clientId }: ClientConnectEvent) => {
         console.log(`[${clientId}] Connected`);
 
-        ws.on('close', () => {
-            console.log(`[${clientId}] Disconnected`);
-        });
+        // Stream audio to the newly connected client
+        server.streamToClient(clientId, pcmData)
+            .then((stats) => {
+                console.log('');
+                console.log(`[${clientId}] Stream complete:`);
+                console.log(`  Chunks sent: ${stats.chunkCount}`);
+                console.log(`  Bytes sent: ${stats.byteCount}`);
+                console.log(`  Duration: ${stats.durationMs}ms`);
+            })
+            .catch((error) => {
+                console.error(`[${clientId}] Stream error: ${error.message}`);
+            });
+    });
 
-        ws.on('error', (error) => {
-            console.error(`[${clientId}] Error: ${error.message}`);
-        });
+    server.on('client:disconnect', ({ clientId }: ClientDisconnectEvent) => {
+        console.log(`[${clientId}] Disconnected`);
+    });
 
-        // Stream audio to this client
-        try {
-            const stats = await streamToClient(ws, serializedChunks, clientId);
-            const elapsed = Date.now() - stats.startTime;
-            console.log('');
-            console.log(`[${clientId}] Stream complete:`);
-            console.log(`  Chunks sent: ${stats.chunksSent}`);
-            console.log(`  Bytes sent: ${stats.bytesSent}`);
-            console.log(`  Duration: ${elapsed}ms`);
-            console.log(`  Throughput: ${((stats.bytesSent / elapsed) * 1000 / 1024).toFixed(2)} KB/s`);
-        } catch (error) {
-            console.error(`[${clientId}] Stream error: ${(error as Error).message}`);
+    server.on('stream:end', ({ clientId, stats }: StreamEndEvent & { clientId: string }) => {
+        if (stats.endTime && stats.startTime) {
+            const elapsed = stats.endTime - stats.startTime;
+            console.log(`[${clientId}] Throughput: ${((stats.byteCount / elapsed) * 1000 / 1024).toFixed(2)} KB/s`);
         }
     });
 
+    // Start the server
+    console.log(`Starting WebSocket server on ws://127.0.0.1:${config.port}`);
+    await server.start();
+    console.log('Waiting for clients to connect...');
+    console.log('');
+
     // Handle shutdown
-    const shutdown = (): void => {
+    const shutdown = async (): Promise<void> => {
         console.log('');
         console.log('Shutting down server...');
-        wss.close(() => {
-            console.log('Server closed');
-            process.exit(0);
-        });
-
-        // Force exit after 3 seconds if graceful shutdown fails
-        setTimeout(() => {
-            console.log('Forcing exit...');
-            process.exit(1);
-        }, 3000);
+        await server.stop();
+        console.log('Server closed');
+        process.exit(0);
     };
 
     process.on('SIGINT', shutdown);

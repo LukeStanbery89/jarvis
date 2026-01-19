@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
-import WebSocket from 'ws';
 import {
-    AudioDecoder,
-    FFplayAudioPlayer,
-    SerializedAudioChunk,
-} from '@jarvis/audio';
+    AutoPlayClient,
+    StreamStartEvent,
+    StreamStats,
+} from '@jarvis/audio-stream';
 
 /**
  * Configuration for the audio WebSocket client.
@@ -15,24 +14,6 @@ interface ClientConfig {
     url: string;
     /** Whether to enable verbose logging */
     verbose: boolean;
-}
-
-/**
- * Statistics for audio reception.
- */
-interface ReceptionStats {
-    /** Total chunks received */
-    chunksReceived: number;
-    /** Total bytes received (raw JSON) */
-    bytesReceived: number;
-    /** Sequence numbers received (for gap detection) */
-    sequenceNumbers: number[];
-    /** First chunk timestamp */
-    firstChunkTime: number | null;
-    /** Last chunk timestamp */
-    lastChunkTime: number | null;
-    /** Network latencies (chunk timestamp to receive time) */
-    latencies: number[];
 }
 
 /**
@@ -88,54 +69,6 @@ function printUsage(): void {
 }
 
 /**
- * Calculates statistics summary.
- */
-function calculateStatsSummary(stats: ReceptionStats): {
-    totalChunks: number;
-    totalBytes: number;
-    duration: number;
-    avgLatency: number;
-    minLatency: number;
-    maxLatency: number;
-    gaps: number[];
-} {
-    const duration = stats.lastChunkTime && stats.firstChunkTime
-        ? stats.lastChunkTime - stats.firstChunkTime
-        : 0;
-
-    // Find gaps in sequence numbers
-    const sortedSeq = [...stats.sequenceNumbers].sort((a, b) => a - b);
-    const gaps: number[] = [];
-    for (let i = 1; i < sortedSeq.length; i++) {
-        if (sortedSeq[i] - sortedSeq[i - 1] > 1) {
-            for (let j = sortedSeq[i - 1] + 1; j < sortedSeq[i]; j++) {
-                gaps.push(j);
-            }
-        }
-    }
-
-    const avgLatency = stats.latencies.length > 0
-        ? stats.latencies.reduce((a, b) => a + b, 0) / stats.latencies.length
-        : 0;
-    const minLatency = stats.latencies.length > 0
-        ? Math.min(...stats.latencies)
-        : 0;
-    const maxLatency = stats.latencies.length > 0
-        ? Math.max(...stats.latencies)
-        : 0;
-
-    return {
-        totalChunks: stats.chunksReceived,
-        totalBytes: stats.bytesReceived,
-        duration,
-        avgLatency,
-        minLatency,
-        maxLatency,
-        gaps,
-    };
-}
-
-/**
  * Main entry point.
  */
 async function main(): Promise<void> {
@@ -153,149 +86,77 @@ async function main(): Promise<void> {
 
     console.log(`Connecting to ${config.url}...`);
 
-    const decoder = new AudioDecoder();
-    const player = new FFplayAudioPlayer();
-    const stats: ReceptionStats = {
-        chunksReceived: 0,
-        bytesReceived: 0,
-        sequenceNumbers: [],
-        firstChunkTime: null,
-        lastChunkTime: null,
-        latencies: [],
-    };
+    // Create the AutoPlayClient - replaces ~150 lines of boilerplate!
+    const client = new AutoPlayClient({
+        url: config.url,
+        autoPlay: true,
+        autoReconnect: false,
+    });
 
-    let streamId: string | null = null;
-    let playbackStarted = false;
-    let playbackPromise: Promise<void> | null = null;
+    // Track chunk count for verbose logging
+    let chunkCount = 0;
 
-    const ws = new WebSocket(config.url);
+    // Handle stream events
+    client.on('stream:start', ({ streamId, format }: StreamStartEvent) => {
+        console.log(`Stream ID: ${streamId}`);
+        console.log(`Format: ${format.encoding} ${format.channels}ch ${format.sampleRate}Hz`);
+        console.log('');
+        console.log('Starting playback...');
+    });
 
-    ws.on('open', () => {
+    client.on('stream:chunk', ({ sequenceNumber, isFinal }: { sequenceNumber: number; isFinal: boolean; }) => {
+        chunkCount++;
+        if (config.verbose) {
+            console.log(`Received chunk #${sequenceNumber}${isFinal ? ' [FINAL]' : ''}`);
+        } else if (sequenceNumber === 0 || isFinal || sequenceNumber % 10 === 0) {
+            console.log(`Received chunk #${sequenceNumber}${isFinal ? ' [FINAL]' : ''}`);
+        }
+    });
+
+    client.on('playback:end', () => {
+        console.log('');
+        console.log('Playback completed');
+    });
+
+    client.on('error', ({ error, context }) => {
+        console.error(`Error (${context}): ${error.message}`);
+    });
+
+    client.on('disconnected', () => {
+        console.log('');
+        console.log('Disconnected from server');
+    });
+
+    // Connect to the server
+    try {
+        await client.connect();
         console.log('Connected to server');
         console.log('Waiting for audio stream...');
         console.log('');
-    });
-
-    ws.on('message', (data: WebSocket.RawData) => {
-        const now = Date.now();
-        const jsonStr = data.toString();
-        stats.bytesReceived += jsonStr.length;
-
-        let chunk: SerializedAudioChunk;
-        try {
-            chunk = JSON.parse(jsonStr) as SerializedAudioChunk;
-        } catch (error) {
-            console.error(`Failed to parse chunk: ${(error as Error).message}`);
-            return;
-        }
-
-        // Track statistics
-        stats.chunksReceived++;
-        stats.sequenceNumbers.push(chunk.sequenceNumber);
-        if (stats.firstChunkTime === null) {
-            stats.firstChunkTime = now;
-        }
-        stats.lastChunkTime = now;
-
-        // Calculate latency (time from chunk creation to receipt)
-        const latency = now - chunk.timestamp;
-        stats.latencies.push(latency);
-
-        // Log reception
-        if (config.verbose) {
-            console.log(
-                `Received chunk #${chunk.sequenceNumber}: ` +
-                `${chunk.data.length} bytes base64, ` +
-                `${chunk.durationMs}ms duration, ` +
-                `latency ${latency}ms` +
-                `${chunk.isFinal ? ' [FINAL]' : ''}`
-            );
-        } else if (chunk.sequenceNumber === 0 || chunk.isFinal || chunk.sequenceNumber % 10 === 0) {
-            // Log periodically in non-verbose mode
-            console.log(
-                `Received chunk #${chunk.sequenceNumber}` +
-                `${chunk.isFinal ? ' [FINAL]' : ''}`
-            );
-        }
-
-        // Capture stream ID from first chunk
-        if (streamId === null) {
-            streamId = chunk.streamId;
-            console.log(`Stream ID: ${streamId}`);
-            console.log(`Format: ${chunk.format.encoding} ${chunk.format.channels}ch ${chunk.format.sampleRate}Hz`);
-            console.log('');
-        }
-
-        // Add chunk to decoder
-        decoder.addChunk(chunk);
-
-        // Start playback after receiving first chunk
-        if (!playbackStarted) {
-            playbackStarted = true;
-            console.log('Starting playback...');
-
-            const stream = decoder.createStream();
-            const format = decoder.getFormat();
-
-            if (format) {
-                playbackPromise = player.playStream(stream, format)
-                    .then(() => {
-                        console.log('');
-                        console.log('Playback completed');
-                    })
-                    .catch((error) => {
-                        console.error(`Playback error: ${error.message}`);
-                    });
-            }
-        }
-    });
-
-    ws.on('close', async () => {
-        console.log('');
-        console.log('Disconnected from server');
 
         // Wait for playback to complete
-        if (playbackPromise) {
-            console.log('Waiting for playback to finish...');
-            await playbackPromise;
-        }
+        const stats: StreamStats = await client.waitForPlayback();
 
         // Print summary
-        const summary = calculateStatsSummary(stats);
-
         console.log('');
         console.log('=== Reception Summary ===');
-        console.log(`Total chunks received: ${summary.totalChunks}`);
-        console.log(`Total bytes received: ${summary.totalBytes}`);
-        console.log(`Reception duration: ${summary.duration}ms`);
-        console.log(`Average latency: ${summary.avgLatency.toFixed(1)}ms`);
-        console.log(`Latency range: ${summary.minLatency}ms - ${summary.maxLatency}ms`);
+        console.log(`Total chunks received: ${stats.chunkCount}`);
+        console.log(`Total bytes received: ${stats.byteCount}`);
+        console.log(`Audio duration: ${stats.durationMs}ms`);
 
-        if (summary.gaps.length > 0) {
-            console.log(`Missing chunks: ${summary.gaps.join(', ')}`);
-        } else {
-            console.log('All chunks received in sequence');
+        if (stats.avgLatencyMs !== undefined) {
+            console.log(`Average latency: ${stats.avgLatencyMs.toFixed(1)}ms`);
+        }
+        if (stats.minLatencyMs !== undefined && stats.maxLatencyMs !== undefined) {
+            console.log(`Latency range: ${stats.minLatencyMs}ms - ${stats.maxLatencyMs}ms`);
         }
 
         console.log('');
         process.exit(0);
-    });
-
-    ws.on('error', (error) => {
-        console.error(`WebSocket error: ${error.message}`);
+    } catch (error) {
+        console.error(`Connection error: ${(error as Error).message}`);
         process.exit(1);
-    });
-
-    // Handle shutdown
-    const shutdown = (): void => {
-        console.log('');
-        console.log('Shutting down...');
-        player.stop();
-        ws.close();
-    };
-
-    process.on('SIGINT', shutdown);
-    process.on('SIGTERM', shutdown);
+    }
 }
 
 main().catch((error) => {

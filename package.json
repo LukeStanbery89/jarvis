@@ -5,6 +5,7 @@
     "private": true,
     "workspaces": [
         "modules/audio",
+        "modules/audio-stream",
         "modules/device_identity",
         "modules/protocol",
         "modules/rag-tools-browser",
