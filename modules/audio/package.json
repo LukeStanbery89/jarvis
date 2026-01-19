@@ -1,0 +1,57 @@
+{
+    "name": "@jarvis/audio",
+    "version": "1.0.0",
+    "description": "Audio encoding/decoding and playback for J.A.R.V.I.S.",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./players": {
+            "types": "./dist/players/index.d.ts",
+            "import": "./dist/players/index.js"
+        },
+        "./encoding": {
+            "types": "./dist/encoding/index.d.ts",
+            "import": "./dist/encoding/index.js"
+        },
+        "./decoding": {
+            "types": "./dist/decoding/index.d.ts",
+            "import": "./dist/decoding/index.js"
+        },
+        "./testing": {
+            "types": "./dist/testing/index.d.ts",
+            "import": "./dist/testing/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc --watch",
+        "clean": "rm -rf dist",
+        "rebuild": "npm run clean && npm run build",
+        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    },
+    "keywords": [
+        "audio",
+        "encoding",
+        "decoding",
+        "pcm",
+        "streaming",
+        "jarvis"
+    ],
+    "author": "Luke Stanbery",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/jest": "^29.5.12",
+        "@types/node": "^20.0.0",
+        "jest": "^29.7.0",
+        "ts-jest": "^29.1.2",
+        "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "uuid": "^9.0.0"
+    }
+}

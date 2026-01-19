@@ -4,7 +4,8 @@
     "description": "J.A.R.V.I.S. - AI assistant with modular architecture",
     "private": true,
     "workspaces": [
-        "browser_extension",
+        "modules/audio",
+        "modules/audio-stream",
         "modules/device_identity",
         "modules/protocol",
         "modules/rag-tools-browser",
@@ -12,6 +13,8 @@
         "modules/server-utils",
         "modules/ws-client",
         "modules/ws-server",
+        "browser_extension",
+        "cli-client",
         "server"
     ],
     "scripts": {
