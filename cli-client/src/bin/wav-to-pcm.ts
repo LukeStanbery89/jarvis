@@ -3,8 +3,7 @@
 import { spawn } from 'child_process';
 import { existsSync, promises as fs } from 'fs';
 import { resolve } from 'path';
-import { FFplayAudioPlayer } from '../FFplayAudioPlayer.js';
-import { DEFAULT_AUDIO_FORMAT } from '../types.js';
+import { FFplayAudioPlayer, DEFAULT_AUDIO_FORMAT } from '@jarvis/audio';
 
 /**
  * Streams a WAV file through FFmpeg (decode to PCM) and plays via AudioPlayer.

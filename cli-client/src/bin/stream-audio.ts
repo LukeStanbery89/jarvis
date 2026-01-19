@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
-import { FFplayAudioPlayer } from '../FFplayAudioPlayer.js';
-import { AudioGenerator } from '../AudioGenerator.js';
-import { DEFAULT_AUDIO_FORMAT } from '../types.js';
+import { FFplayAudioPlayer, AudioGenerator, DEFAULT_AUDIO_FORMAT } from '@jarvis/audio';
 
 /**
  * Generates and plays a synthetic sine wave using the AudioPlayer abstraction.

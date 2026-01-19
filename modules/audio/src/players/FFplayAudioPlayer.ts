@@ -1,6 +1,6 @@
 import { spawn, ChildProcess } from 'child_process';
 import { Readable } from 'stream';
-import { AudioPlayer, AudioFormat } from './types.js';
+import { AudioPlayer, AudioFormat } from '../types.js';
 
 /**
  * AudioPlayer implementation using FFplay.

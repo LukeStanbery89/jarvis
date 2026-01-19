@@ -8,6 +8,7 @@
     "bin": {
         "play-audio": "./dist/bin/play-audio.js",
         "stream-audio": "./dist/bin/stream-audio.js",
+        "test-codec": "./dist/bin/test-codec.js",
         "wav-to-pcm": "./dist/bin/wav-to-pcm.js"
     },
     "scripts": {
@@ -23,6 +24,9 @@
     ],
     "author": "Luke Stanbery",
     "license": "ISC",
+    "dependencies": {
+        "@jarvis/audio": "^1.0.0"
+    },
     "devDependencies": {
         "@types/node": "^20.0.0",
         "typescript": "^5.3.3"

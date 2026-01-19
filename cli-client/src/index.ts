@@ -1,3 +1,2 @@
-export * from './types.js';
-export { FFplayAudioPlayer } from './FFplayAudioPlayer.js';
-export { AudioGenerator } from './AudioGenerator.js';
+// Re-export everything from @jarvis/audio
+export * from '@jarvis/audio';

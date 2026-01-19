@@ -5,6 +5,8 @@
     "private": true,
     "workspaces": [
         "browser_extension",
+        "cli-client",
+        "modules/audio",
         "modules/device_identity",
         "modules/protocol",
         "modules/rag-tools-browser",
