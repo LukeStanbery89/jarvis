@@ -1,4 +1,4 @@
-import { AudioChunk } from '../types.js';
+import { AudioChunk, ChunkBufferConfig } from '../types.js';
 import { DEFAULT_MAX_BUFFER_SIZE } from '../constants.js';
 
 /**
@@ -11,13 +11,20 @@ export class ChunkBuffer {
     private maxBufferSize: number;
     private streamComplete: boolean = false;
     private finalSeqNumber: number = -1;
+    private onChunksDropped?: (droppedSequenceNumbers: number[]) => void;
 
     /**
      * Creates a new ChunkBuffer.
-     * @param maxBufferSize - Maximum number of chunks to buffer before dropping old ones
+     * @param config - Configuration options or max buffer size for backwards compatibility
      */
-    constructor(maxBufferSize: number = DEFAULT_MAX_BUFFER_SIZE) {
-        this.maxBufferSize = maxBufferSize;
+    constructor(config?: ChunkBufferConfig | number) {
+        if (typeof config === 'number') {
+            // Backwards compatibility: accept just the maxBufferSize
+            this.maxBufferSize = config;
+        } else {
+            this.maxBufferSize = config?.maxBufferSize ?? DEFAULT_MAX_BUFFER_SIZE;
+            this.onChunksDropped = config?.onChunksDropped;
+        }
     }
 
     /**
@@ -45,7 +52,16 @@ export class ChunkBuffer {
     }
 
     /**
+     * Peeks at the next chunk in sequence without removing it.
+     * @returns The next chunk, or null if not available yet
+     */
+    peekNext(): AudioChunk | null {
+        return this.chunks.get(this.nextExpectedSeq) ?? null;
+    }
+
+    /**
      * Gets the next chunk in sequence if available.
+     * Removes the chunk from the buffer.
      * @returns The next chunk, or null if not available yet
      */
     getNext(): AudioChunk | null {
@@ -122,14 +138,26 @@ export class ChunkBuffer {
 
     /**
      * Prunes the buffer by removing oldest chunks when over capacity.
+     * Notifies via onChunksDropped callback if configured.
      */
     private pruneBuffer(): void {
         // Find the oldest sequence numbers and remove them
         const seqNumbers = Array.from(this.chunks.keys()).sort((a, b) => a - b);
         const toRemove = seqNumbers.length - this.maxBufferSize;
 
+        if (toRemove <= 0) {
+            return;
+        }
+
+        const droppedSeqs: number[] = [];
         for (let i = 0; i < toRemove; i++) {
+            droppedSeqs.push(seqNumbers[i]);
             this.chunks.delete(seqNumbers[i]);
+        }
+
+        // Notify about dropped chunks
+        if (this.onChunksDropped && droppedSeqs.length > 0) {
+            this.onChunksDropped(droppedSeqs);
         }
 
         // Update nextExpectedSeq if we skipped chunks

@@ -9,6 +9,7 @@ import { AudioPlayer, AudioFormat } from '../types.js';
 export class FFplayAudioPlayer implements AudioPlayer {
     private ffplay: ChildProcess | null = null;
     private currentStream: Readable | null = null;
+    private pendingReject: ((error: Error) => void) | null = null;
 
     /**
      * Plays audio from a Readable stream using FFplay.
@@ -26,6 +27,8 @@ export class FFplayAudioPlayer implements AudioPlayer {
             '-nodisp',
             '-autoexit',
             '-hide_banner',
+            '-analyzeduration', '0',
+            '-probesize', '32',
             '-f', format.encoding,
             '-ar', format.sampleRate.toString(),
         ];
@@ -42,7 +45,11 @@ export class FFplayAudioPlayer implements AudioPlayer {
         this.ffplay = spawn('ffplay', args);
 
         return new Promise((resolve, reject) => {
+            // Store reject function so stop() can use it
+            this.pendingReject = reject;
+
             if (!this.ffplay) {
+                this.pendingReject = null;
                 reject(new Error('Failed to spawn ffplay'));
                 return;
             }
@@ -54,6 +61,7 @@ export class FFplayAudioPlayer implements AudioPlayer {
             });
 
             this.ffplay.on('error', (err: NodeJS.ErrnoException) => {
+                this.pendingReject = null;
                 if (err.code === 'ENOENT') {
                     reject(new Error(
                         'FFplay not found. Please install FFmpeg with ffplay included.\n' +
@@ -72,6 +80,7 @@ export class FFplayAudioPlayer implements AudioPlayer {
                 this.ffplay.stdin.on('error', (err: NodeJS.ErrnoException) => {
                     // EPIPE is normal when ffplay closes early
                     if (err.code !== 'EPIPE') {
+                        this.pendingReject = null;
                         reject(new Error(`FFplay stdin error: ${err.message}`));
                     }
                 });
@@ -80,6 +89,7 @@ export class FFplayAudioPlayer implements AudioPlayer {
             this.ffplay.on('close', (code: number | null) => {
                 this.ffplay = null;
                 this.currentStream = null;
+                this.pendingReject = null;
 
                 if (code === 0 || code === null) {
                     resolve();
@@ -96,8 +106,15 @@ export class FFplayAudioPlayer implements AudioPlayer {
     /**
      * Stops any currently playing audio.
      * Safe to call even if nothing is playing.
+     * If playback is in progress, the playStream promise will reject with an error.
      */
     stop(): void {
+        // Reject any pending promise before cleaning up
+        if (this.pendingReject) {
+            this.pendingReject(new Error('Playback stopped'));
+            this.pendingReject = null;
+        }
+
         if (this.currentStream) {
             this.currentStream.destroy();
             this.currentStream = null;

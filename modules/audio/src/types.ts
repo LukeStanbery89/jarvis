@@ -86,9 +86,21 @@ export interface AudioEncoderConfig {
 }
 
 /**
+ * Configuration options for ChunkBuffer.
+ */
+export interface ChunkBufferConfig {
+    /** Maximum number of chunks to buffer before dropping old ones (default: 100) */
+    maxBufferSize?: number;
+    /** Callback invoked when chunks are dropped due to buffer overflow */
+    onChunksDropped?: (droppedSequenceNumbers: number[]) => void;
+}
+
+/**
  * Configuration options for AudioDecoder.
  */
 export interface AudioDecoderConfig {
     /** Maximum number of chunks to buffer before dropping old ones (default: 100) */
     maxBufferSize?: number;
+    /** Callback invoked when chunks are dropped due to buffer overflow */
+    onChunksDropped?: (droppedSequenceNumbers: number[]) => void;
 }

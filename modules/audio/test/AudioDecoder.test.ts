@@ -160,6 +160,66 @@ describe('ChunkBuffer', () => {
 
             expect(buffer.size()).toBeLessThanOrEqual(3);
         });
+
+        it('should call onChunksDropped callback when chunks are pruned', () => {
+            const droppedChunks: number[] = [];
+            const buffer = new ChunkBuffer({
+                maxBufferSize: 3,
+                onChunksDropped: (seqs) => droppedChunks.push(...seqs),
+            });
+
+            buffer.add(createChunk(0));
+            buffer.add(createChunk(1));
+            buffer.add(createChunk(2));
+            buffer.add(createChunk(3)); // Should trigger pruning of chunk 0
+
+            expect(droppedChunks).toContain(0);
+        });
+
+        it('should not call onChunksDropped when no overflow occurs', () => {
+            const droppedChunks: number[] = [];
+            const buffer = new ChunkBuffer({
+                maxBufferSize: 5,
+                onChunksDropped: (seqs) => droppedChunks.push(...seqs),
+            });
+
+            buffer.add(createChunk(0));
+            buffer.add(createChunk(1));
+            buffer.add(createChunk(2));
+
+            expect(droppedChunks).toEqual([]);
+        });
+    });
+
+    describe('peekNext', () => {
+        it('should return next chunk without consuming it', () => {
+            const buffer = new ChunkBuffer();
+
+            buffer.add(createChunk(0));
+            buffer.add(createChunk(1));
+
+            const peeked = buffer.peekNext();
+            expect(peeked?.sequenceNumber).toBe(0);
+
+            // Peek again should return same chunk
+            const peekedAgain = buffer.peekNext();
+            expect(peekedAgain?.sequenceNumber).toBe(0);
+
+            // getNext should also return same chunk
+            const got = buffer.getNext();
+            expect(got?.sequenceNumber).toBe(0);
+
+            // Now peek should return next
+            expect(buffer.peekNext()?.sequenceNumber).toBe(1);
+        });
+
+        it('should return null when no next chunk available', () => {
+            const buffer = new ChunkBuffer();
+
+            buffer.add(createChunk(1)); // Gap at 0
+
+            expect(buffer.peekNext()).toBeNull();
+        });
     });
 });
 

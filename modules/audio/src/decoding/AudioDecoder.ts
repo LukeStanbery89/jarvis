@@ -7,20 +7,24 @@ import { deserializeChunk, isSerializedChunk } from '../encoding/index.js';
 /**
  * Decodes audio chunks back into a playable PCM stream.
  * Handles buffering, ordering, and creates a Readable stream for playback.
+ * Respects stream backpressure to prevent memory buildup.
  */
 export class AudioDecoder {
     private buffer: ChunkBuffer;
     private format: AudioFormat | null = null;
     private stream: Readable | null = null;
     private streamId: string | null = null;
+    private streamEnded: boolean = false;
 
     /**
      * Creates a new AudioDecoder.
-     * @param config - Optional configuration for buffer size
+     * @param config - Optional configuration for buffer size and callbacks
      */
     constructor(config?: AudioDecoderConfig) {
-        const maxBufferSize = config?.maxBufferSize ?? DEFAULT_MAX_BUFFER_SIZE;
-        this.buffer = new ChunkBuffer(maxBufferSize);
+        this.buffer = new ChunkBuffer({
+            maxBufferSize: config?.maxBufferSize ?? DEFAULT_MAX_BUFFER_SIZE,
+            onChunksDropped: config?.onChunksDropped,
+        });
     }
 
     /**
@@ -64,7 +68,7 @@ export class AudioDecoder {
 
         this.stream = new Readable({
             read: () => {
-                // Push any available data when read is called
+                // Push any available data when read is called (backpressure relieved)
                 this.pushAvailableData();
             }
         });
@@ -117,10 +121,11 @@ export class AudioDecoder {
      */
     reset(): void {
         // End existing stream if any
-        if (this.stream) {
+        if (this.stream && !this.streamEnded) {
             this.stream.push(null);
-            this.stream = null;
         }
+        this.stream = null;
+        this.streamEnded = false;
 
         this.buffer.reset();
         this.format = null;
@@ -128,22 +133,40 @@ export class AudioDecoder {
     }
 
     /**
-     * Pushes all available data from buffer to stream.
+     * Pushes available data from buffer to stream, respecting backpressure.
+     * Only consumes chunks from buffer if stream can accept them.
      */
     private pushAvailableData(): void {
-        if (!this.stream) {
+        if (!this.stream || this.streamEnded) {
             return;
         }
 
-        const chunks = this.buffer.getAvailable();
-        for (const chunk of chunks) {
-            if (chunk.data.length > 0) {
-                this.stream.push(chunk.data);
+        // Keep pushing while there are chunks and stream can accept data
+        while (this.buffer.hasNext()) {
+            const chunk = this.buffer.peekNext();
+            if (!chunk) {
+                break;
             }
+
+            // Try to push data
+            let canContinue = true;
+            if (chunk.data.length > 0) {
+                canContinue = this.stream.push(chunk.data);
+            }
+
+            // Only consume the chunk after successful push
+            this.buffer.getNext();
 
             // End stream on final chunk
             if (chunk.isFinal) {
                 this.stream.push(null);
+                this.streamEnded = true;
+                return;
+            }
+
+            // Stop if backpressure detected - _read() will call us again
+            if (!canContinue) {
+                return;
             }
         }
     }

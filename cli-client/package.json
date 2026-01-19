@@ -6,6 +6,8 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "bin": {
+        "audio-ws-client": "./dist/bin/audio-ws-client.js",
+        "audio-ws-server": "./dist/bin/audio-ws-server.js",
         "play-audio": "./dist/bin/play-audio.js",
         "stream-audio": "./dist/bin/stream-audio.js",
         "test-codec": "./dist/bin/test-codec.js",
@@ -25,10 +27,12 @@
     "author": "Luke Stanbery",
     "license": "ISC",
     "dependencies": {
-        "@jarvis/audio": "^1.0.0"
+        "@jarvis/audio": "^1.0.0",
+        "ws": "^8.18.0"
     },
     "devDependencies": {
         "@types/node": "^20.0.0",
+        "@types/ws": "^8.5.10",
         "typescript": "^5.3.3"
     }
 }
